@@ -240,7 +240,7 @@
     function showLoading() { document.getElementById('loading').style.display = 'flex'; }
     function hideLoading() { document.getElementById('loading').style.display = 'none'; }
 
-    // Llamada genérica a la API (maneja respuestas con success: false)
+    // Llamada genérica a la API (maneja respuestas con success: false y normaliza arrays)
     async function apiCall(url, options = {}) {
         showLoading();
         try {
@@ -249,7 +249,7 @@
                 ...options
             });
             let data = await response.json();
-            // Normalizar: si es array con un solo elemento, extraerlo (para compatibilidad)
+            // Normalizar: si es un array con un solo elemento, extraerlo (para compatibilidad con algunos workflows)
             if (Array.isArray(data) && data.length === 1) {
                 data = data[0];
             }
@@ -319,7 +319,7 @@
         location.reload();
     });
 
-    // ==================== TÉCNICO (simplificado) ====================
+    // ==================== TÉCNICO (Mis Intervenciones, Sesiones, Fotos) ====================
     async function cargarMisIntervenciones() {
         const data = await apiCall(`${N8N_BASE_URL}/webhook/mis-intervenciones?tecnico_id=${currentUser.id}`);
         const container = document.getElementById('misIntervencionesList');
@@ -340,11 +340,84 @@
     }
 
     async function verDetalleTecnico(intervencionId) {
-        // Función completa (omitida por brevedad, pero puedes copiarla de versiones anteriores)
-        alert('Función en desarrollo. Próximamente.');
+        const detalle = await apiCall(`${N8N_BASE_URL}/webhook/detalle-intervencion?id=${intervencionId}`);
+        const sesionActiva = detalle.sesiones ? detalle.sesiones.find(s => s.fin === null) : null;
+        let sesionId = sesionActiva ? sesionActiva.id : null;
+        let contenido = `
+            <h5>${detalle.activo_nombre} - ${detalle.tipo}</h5>
+            <p>${detalle.descripcion}<br>Total: ${detalle.cantidad_total || 'N/A'} ${detalle.unidad || ''}<br>Realizado: ${detalle.realizado} ${detalle.unidad || ''}<br>Pendiente: ${detalle.pendiente}</p>
+        `;
+        if (sesionActiva) {
+            contenido += `<div class="alert alert-info">Sesión activa desde ${new Date(sesionActiva.inicio).toLocaleString()}</div>`;
+            contenido += `<div class="mb-3"><label class="form-label">Subir foto</label><input type="file" id="fotoInput" accept="image/*" class="form-control"><button class="btn btn-secondary mt-2" id="subirFotoBtn">Subir foto</button></div>`;
+            contenido += `<div class="mb-3"><label>Cantidad realizada hoy (${detalle.unidad || 'unidades'})</label><input type="number" step="any" id="cantidadRealizada" class="form-control"></div>`;
+            contenido += `<div class="mb-3"><label>Comentario</label><textarea id="comentarioCierre" class="form-control"></textarea></div>`;
+            contenido += `<button class="btn btn-success" id="cerrarSesionBtn">Cerrar jornada</button>`;
+        } else {
+            contenido += `<button class="btn btn-primary" id="iniciarSesionBtn">Iniciar jornada</button>`;
+        }
+        if (detalle.sesiones && detalle.sesiones.length) {
+            contenido += `<hr><h6>Fotos anteriores</h6><div id="fotosAnteriores" class="d-flex flex-wrap"></div>`;
+        }
+        document.getElementById('detalleIntervBody').innerHTML = contenido;
+        if (detalle.sesiones && detalle.sesiones.length) {
+            const fotosDiv = document.getElementById('fotosAnteriores');
+            for (let ses of detalle.sesiones) {
+                try {
+                    const fotos = await apiCall(`${N8N_BASE_URL}/webhook/listar-fotos?sesion_id=${ses.id}`);
+                    if (fotos && fotos.length) {
+                        fotos.forEach(f => {
+                            fotosDiv.innerHTML += `<img src="${f.url}" class="foto-preview img-thumbnail" onclick="window.open('${f.url}')">`;
+                        });
+                    }
+                } catch(e) { /* no hay fotos */ }
+            }
+        }
+        const modal = new bootstrap.Modal(document.getElementById('modalDetalleIntervencion'));
+        modal.show();
+        if (!sesionActiva) {
+            document.getElementById('iniciarSesionBtn').addEventListener('click', async () => {
+                await apiCall(`${N8N_BASE_URL}/webhook/iniciar-sesion`, {
+                    method: 'POST',
+                    body: JSON.stringify({ intervencion_id: intervencionId, tecnico_id: currentUser.id })
+                });
+                modal.hide();
+                cargarMisIntervenciones();
+                alert('Sesión iniciada. Puedes tomar fotos ahora.');
+            });
+        } else {
+            document.getElementById('subirFotoBtn').addEventListener('click', () => {
+                const file = document.getElementById('fotoInput').files[0];
+                if (!file) return alert('Selecciona una foto');
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    await apiCall(`${N8N_BASE_URL}/webhook/subir-foto`, {
+                        method: 'POST',
+                        body: JSON.stringify({ sesion_id: sesionId, url: e.target.result, subido_por: currentUser.id })
+                    });
+                    alert('Foto subida');
+                    document.getElementById('fotoInput').value = '';
+                    modal.hide();
+                    cargarMisIntervenciones();
+                };
+                reader.readAsDataURL(file);
+            });
+            document.getElementById('cerrarSesionBtn').addEventListener('click', async () => {
+                const cantidad = document.getElementById('cantidadRealizada').value;
+                const comentario = document.getElementById('comentarioCierre').value;
+                await apiCall(`${N8N_BASE_URL}/webhook/cerrar-sesion`, {
+                    method: 'POST',
+                    body: JSON.stringify({ sesion_id: sesionId, cantidad_realizada: cantidad, comentario })
+                });
+                modal.hide();
+                cargarMisIntervenciones();
+                alert('Sesión cerrada');
+            });
+        }
     }
 
     // ==================== ADMIN / SUPERVISOR ====================
+    // USUARIOS
     async function cargarUsuarios() {
         let data = await apiCall(`${N8N_BASE_URL}/webhook/listar-usuarios`);
         if (!Array.isArray(data)) data = [data];
@@ -366,27 +439,6 @@
         document.querySelectorAll('.eliminar-usuario').forEach(btn => btn.addEventListener('click', () => eliminarUsuario(btn.dataset.id)));
     }
 
-    async function eliminarUsuario(id) {
-        console.log('Intentando eliminar usuario con ID:', id);
-        if (!confirm('¿Eliminar este usuario? Esta acción no se puede deshacer.')) return;
-        try {
-            const result = await apiCall(`${N8N_BASE_URL}/webhook/eliminar-usuario`, {
-                method: 'DELETE',
-                body: JSON.stringify({ id, admin_id: currentUser.id })
-            });
-            console.log('Respuesta:', result);
-            if (result.success) {
-                alert('Usuario eliminado correctamente');
-                cargarUsuarios();
-            } else {
-                alert('Error: ' + (result.error || 'No se pudo eliminar'));
-            }
-        } catch (error) {
-            console.error('Error en la petición:', error);
-            alert('Error al eliminar: ' + error.message);
-        }
-    }
-
     async function editarUsuario(id) {
         const users = await apiCall(`${N8N_BASE_URL}/webhook/listar-usuarios`);
         const user = users.find(u => u.id == id);
@@ -401,6 +453,19 @@
         }
     }
 
+    async function eliminarUsuario(id) {
+        if (!confirm('¿Eliminar este usuario? Esta acción no se puede deshacer.')) return;
+        try {
+            const result = await apiCall(`${N8N_BASE_URL}/webhook/eliminar-usuario`, {
+                method: 'DELETE',
+                body: JSON.stringify({ id, admin_id: currentUser.id })
+            });
+            alert('Usuario eliminado correctamente');
+            cargarUsuarios();
+        } catch (err) {}
+    }
+
+    // ACTIVOS
     async function cargarActivos() {
         let data = await apiCall(`${N8N_BASE_URL}/webhook/listar-activos`);
         if (!Array.isArray(data)) data = [data];
@@ -422,9 +487,34 @@
         document.querySelectorAll('.eliminar-activo').forEach(btn => btn.addEventListener('click', () => eliminarActivo(btn.dataset.id)));
     }
 
-    async function editarActivo(id) { /* similar a editarUsuario */ }
-    async function eliminarActivo(id) { /* similar a eliminarUsuario */ }
+    async function editarActivo(id) {
+        const activos = await apiCall(`${N8N_BASE_URL}/webhook/listar-activos`);
+        const activo = activos.find(a => a.id == id);
+        if (activo) {
+            document.getElementById('activoId').value = activo.id;
+            document.getElementById('activoCodigo').value = activo.codigo;
+            document.getElementById('activoNombre').value = activo.nombre;
+            document.getElementById('activoTipo').value = activo.tipo;
+            document.getElementById('activoUbicacion').value = activo.ubicacion || '';
+            new bootstrap.Modal(document.getElementById('modalActivo')).show();
+        }
+    }
 
+    async function eliminarActivo(id) {
+        if (!confirm('¿Eliminar este activo? Se perderán todas las intervenciones asociadas.')) return;
+        try {
+            const result = await apiCall(`${N8N_BASE_URL}/webhook/eliminar-activo`, {
+                method: 'DELETE',
+                body: JSON.stringify({ id, creado_por: currentUser.id })
+            });
+            alert('Activo eliminado correctamente');
+            cargarActivos();
+            cargarSelectActivos();
+            cargarSelectsParaModales();
+        } catch (err) {}
+    }
+
+    // INTERVENCIONES
     async function cargarIntervenciones() {
         let data = await apiCall(`${N8N_BASE_URL}/webhook/listar-intervenciones`);
         if (!Array.isArray(data)) data = [data];
@@ -444,14 +534,61 @@
                 </td>
             </tr>
         `).join('');
-        // Asignar eventos...
+        document.querySelectorAll('.ver-detalle-intervencion').forEach(btn => btn.addEventListener('click', () => verDetalleAdmin(btn.dataset.id)));
+        document.querySelectorAll('.editar-intervencion').forEach(btn => btn.addEventListener('click', () => editarIntervencion(btn.dataset.id)));
+        document.querySelectorAll('.eliminar-intervencion').forEach(btn => btn.addEventListener('click', () => eliminarIntervencion(btn.dataset.id)));
     }
 
+    async function verDetalleAdmin(id) {
+        const detalle = await apiCall(`${N8N_BASE_URL}/webhook/detalle-intervencion?id=${id}`);
+        let html = `<h5>${detalle.activo_nombre} - ${detalle.tipo}</h5><p>${detalle.descripcion}<br>Total: ${detalle.cantidad_total || 'N/A'} ${detalle.unidad || ''}<br>Realizado: ${detalle.realizado} ${detalle.unidad || ''}<br>Pendiente: ${detalle.pendiente}</p>`;
+        html += `<h6>Sesiones</h6><ul>`;
+        if (detalle.sesiones && detalle.sesiones.length) {
+            detalle.sesiones.forEach(s => {
+                html += `<li>${new Date(s.inicio).toLocaleString()} - ${s.fin ? new Date(s.fin).toLocaleString() : 'Activa'} | Cantidad: ${s.cantidad_realizada || 0} | Técnico: ${s.tecnico_nombre}</li>`;
+            });
+        } else html += `<li>No hay sesiones</li>`;
+        html += `</ul>`;
+        document.getElementById('detalleIntervBody').innerHTML = html;
+        new bootstrap.Modal(document.getElementById('modalDetalleIntervencion')).show();
+    }
+
+    async function editarIntervencion(id) {
+        const detalle = await apiCall(`${N8N_BASE_URL}/webhook/detalle-intervencion?id=${id}`);
+        document.getElementById('intervId').value = detalle.id;
+        document.getElementById('intervActivoId').value = detalle.activo_id;
+        document.getElementById('intervTipo').value = detalle.tipo;
+        document.getElementById('intervDescripcion').value = detalle.descripcion || '';
+        document.getElementById('intervCantidadTotal').value = detalle.cantidad_total || '';
+        document.getElementById('intervUnidad').value = detalle.unidad || '';
+        document.getElementById('intervFechaLimite').value = detalle.fecha_limite || '';
+        document.getElementById('intervExpediente').value = detalle.expediente_ministerio || '';
+        const users = await apiCall(`${N8N_BASE_URL}/webhook/listar-usuarios`);
+        const tecnicos = users.filter(u => u.rol === 'tecnico');
+        const selectTecnico = document.getElementById('intervTecnicoId');
+        selectTecnico.innerHTML = tecnicos.map(t => `<option value="${t.id}" ${detalle.tecnico_asignado_id == t.id ? 'selected' : ''}>${t.nombre}</option>`).join('');
+        new bootstrap.Modal(document.getElementById('modalIntervencion')).show();
+    }
+
+    async function eliminarIntervencion(id) {
+        if (!confirm('¿Eliminar esta intervención? Se perderán todas las sesiones y fotos.')) return;
+        try {
+            await apiCall(`${N8N_BASE_URL}/webhook/eliminar-intervencion`, {
+                method: 'DELETE',
+                body: JSON.stringify({ id, creado_por: currentUser.id })
+            });
+            alert('Intervención eliminada correctamente');
+            cargarIntervenciones();
+            cargarReporteAvance();
+        } catch (err) {}
+    }
+
+    // REPORTE Y HOJA DE VIDA
     async function cargarReporteAvance() {
         let data = await apiCall(`${N8N_BASE_URL}/webhook/reporte-avance`);
         if (!Array.isArray(data)) data = [data];
         const tbody = document.getElementById('reporteTableBody');
-        tbody.innerHTML = data.map(r => `<tr><td>${r.tipo}</td><td>${r.activo}</td><td>${r.cantidad_total || ''} ${r.unidad || ''}</td><td>${r.realizado} ${r.unidad || ''}</td><td>${r.pendiente} ${r.unidad || ''}</td><td>${r.estado}</td></tr>`).join('');
+        tbody.innerHTML = data.map(r => `<tr><td>${r.tipo}</td><td>${r.activo}</td><td>${r.cantidad_total || ''} ${r.unidad || ''}</td><td>${r.realizado} ${r.unidad || ''}</td><td>${r.pendiente} ${r.unidad || ''}</td><td>${r.estado}</td>`).join('');
     }
 
     async function cargarSelectActivos() {
@@ -476,16 +613,70 @@
         selectTecnico.innerHTML = tecnicos.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
     }
 
-    // Botones guardar (simplificados)
+    // ==================== BOTONES GUARDAR (CRUD) ====================
     document.getElementById('guardarUsuarioBtn').addEventListener('click', async () => {
-        // Implementación similar a la anterior, usando apiCall
-        alert('Función guardar usuario en desarrollo');
+        const id = document.getElementById('usuarioId').value;
+        const usuario = document.getElementById('usuarioUsername').value;
+        const nombre = document.getElementById('usuarioNombre').value;
+        const password = document.getElementById('usuarioPassword').value;
+        const rol = document.getElementById('usuarioRol').value;
+        const activo = document.getElementById('usuarioActivo').checked;
+        if (!usuario || !nombre) return alert('Usuario y nombre son obligatorios');
+        const data = { admin_id: currentUser.id, usuario, nombre, rol, activo };
+        if (password) data.password = password;
+        if (id) data.id = id;
+        const url = id ? `${N8N_BASE_URL}/webhook/actualizar-usuario` : `${N8N_BASE_URL}/webhook/crear-usuario`;
+        try {
+            await apiCall(url, { method: 'POST', body: JSON.stringify(data) });
+            alert('Usuario guardado correctamente');
+            bootstrap.Modal.getInstance(document.getElementById('modalUsuario')).hide();
+            cargarUsuarios();
+        } catch (err) {}
     });
+
     document.getElementById('guardarActivoBtn').addEventListener('click', async () => {
-        alert('Función guardar activo en desarrollo');
+        const id = document.getElementById('activoId').value;
+        const data = {
+            codigo: document.getElementById('activoCodigo').value,
+            nombre: document.getElementById('activoNombre').value,
+            tipo: document.getElementById('activoTipo').value,
+            ubicacion: document.getElementById('activoUbicacion').value,
+            creado_por: currentUser.id
+        };
+        if (id) data.id = id;
+        const url = id ? `${N8N_BASE_URL}/webhook/actualizar-activo` : `${N8N_BASE_URL}/webhook/crear-activo`;
+        try {
+            await apiCall(url, { method: 'POST', body: JSON.stringify(data) });
+            alert('Activo guardado correctamente');
+            bootstrap.Modal.getInstance(document.getElementById('modalActivo')).hide();
+            cargarActivos();
+            cargarSelectActivos();
+            cargarSelectsParaModales();
+        } catch (err) {}
     });
+
     document.getElementById('guardarIntervencionBtn').addEventListener('click', async () => {
-        alert('Función guardar intervención en desarrollo');
+        const id = document.getElementById('intervId').value;
+        const data = {
+            activo_id: document.getElementById('intervActivoId').value,
+            tipo: document.getElementById('intervTipo').value,
+            descripcion: document.getElementById('intervDescripcion').value,
+            cantidad_total: document.getElementById('intervCantidadTotal').value || null,
+            unidad: document.getElementById('intervUnidad').value,
+            fecha_limite: document.getElementById('intervFechaLimite').value,
+            expediente: document.getElementById('intervExpediente').value,
+            creado_por: currentUser.id,
+            tecnico_id: document.getElementById('intervTecnicoId').value
+        };
+        if (id) data.id = id;
+        const url = id ? `${N8N_BASE_URL}/webhook/actualizar-intervencion` : `${N8N_BASE_URL}/webhook/crear-intervencion`;
+        try {
+            await apiCall(url, { method: 'POST', body: JSON.stringify(data) });
+            alert('Intervención guardada correctamente');
+            bootstrap.Modal.getInstance(document.getElementById('modalIntervencion')).hide();
+            cargarIntervenciones();
+            cargarReporteAvance();
+        } catch (err) {}
     });
 
     // Inicialización
