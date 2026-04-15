@@ -6,7 +6,7 @@
     <title>Mantenimiento Zona Franca</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome 6 (opcional) -->
+    <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body { background-color: #f8f9fa; }
@@ -17,6 +17,8 @@
         .img-modal { max-width: 90%; max-height: 90%; }
         .nav-tabs .nav-link.active { font-weight: bold; }
         .loading { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center; color: white; }
+        .table-responsive { overflow-x: auto; }
+        .btn-sm { margin: 2px; }
     </style>
 </head>
 <body>
@@ -44,7 +46,7 @@
     </div>
 </div>
 
-<!-- Dashboard principal (se muestra tras login) -->
+<!-- Dashboard principal -->
 <div id="dashboard" class="dashboard container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="fas fa-tools"></i> Sistema de Mantenimiento</h2>
@@ -54,51 +56,48 @@
         </div>
     </div>
 
-    <!-- Tabs según rol -->
     <ul class="nav nav-tabs" id="mainTabs" role="tablist">
-        <!-- Técnico: Mis Intervenciones -->
         <li class="nav-item" role="presentation" id="tabMisIntervencionesLi">
             <button class="nav-link" id="misIntervencionesTab" data-bs-toggle="tab" data-bs-target="#misIntervenciones" type="button" role="tab">Mis Intervenciones</button>
         </li>
-        <!-- Admin/Supervisor: Gestión de Usuarios (solo admin) -->
         <li class="nav-item" role="presentation" id="tabUsuariosLi">
             <button class="nav-link" id="usuariosTab" data-bs-toggle="tab" data-bs-target="#usuarios" type="button" role="tab">Usuarios</button>
         </li>
-        <!-- Admin/Supervisor: Activos -->
         <li class="nav-item" role="presentation" id="tabActivosLi">
             <button class="nav-link" id="activosTab" data-bs-toggle="tab" data-bs-target="#activos" type="button" role="tab">Activos</button>
         </li>
-        <!-- Admin/Supervisor: Intervenciones -->
         <li class="nav-item" role="presentation" id="tabIntervencionesLi">
             <button class="nav-link" id="intervencionesTab" data-bs-toggle="tab" data-bs-target="#intervenciones" type="button" role="tab">Intervenciones</button>
         </li>
-        <!-- Admin/Supervisor: Reporte Avance -->
         <li class="nav-item" role="presentation" id="tabReporteLi">
             <button class="nav-link" id="reporteTab" data-bs-toggle="tab" data-bs-target="#reporte" type="button" role="tab">Reporte Avance</button>
         </li>
-        <!-- Admin/Supervisor: Hoja de Vida -->
         <li class="nav-item" role="presentation" id="tabHojaVidaLi">
             <button class="nav-link" id="hojaVidaTab" data-bs-toggle="tab" data-bs-target="#hojaVida" type="button" role="tab">Hoja de Vida</button>
         </li>
     </ul>
 
     <div class="tab-content mt-3">
-        <!-- Panel Mis Intervenciones (técnico) -->
+        <!-- Panel Mis Intervenciones -->
         <div class="tab-pane fade" id="misIntervenciones" role="tabpanel">
             <div class="card p-3">
                 <h4>Mis Intervenciones Asignadas</h4>
                 <div id="misIntervencionesList" class="list-group"></div>
             </div>
-            <!-- Modal para detalle de intervención (sesiones activas, fotos, cerrar jornada) -->
         </div>
 
-        <!-- Panel Usuarios (admin) -->
+        <!-- Panel Usuarios -->
         <div class="tab-pane fade" id="usuarios" role="tabpanel">
             <div class="card p-3">
                 <h4>Gestión de Usuarios</h4>
                 <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalUsuario">Nuevo Usuario</button>
-                <div id="usuariosList" class="table-responsive">
-                    <table class="table table-striped"><thead><tr><th>ID</th><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Activo</th><th>Acciones</th></tr></thead><tbody id="usuariosTableBody"></tbody></table>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr><th>ID</th><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Activo</th><th>Acciones</th></tr>
+                        </thead>
+                        <tbody id="usuariosTableBody"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -108,19 +107,25 @@
             <div class="card p-3">
                 <h4>Gestión de Activos</h4>
                 <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalActivo">Nuevo Activo</button>
-                <div id="activosList" class="table-responsive">
-                    <table class="table table-striped"><thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Tipo</th><th>Ubicación</th></tr></thead><tbody id="activosTableBody"></tbody></table>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Tipo</th><th>Ubicación</th><th>Acciones</th></tr></thead>
+                        <tbody id="activosTableBody"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
-        <!-- Panel Intervenciones (admin/supervisor) -->
+        <!-- Panel Intervenciones -->
         <div class="tab-pane fade" id="intervenciones" role="tabpanel">
             <div class="card p-3">
                 <h4>Intervenciones de Mantenimiento</h4>
                 <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalIntervencion">Nueva Intervención</button>
-                <div id="intervencionesList" class="table-responsive">
-                    <table class="table table-striped"><thead><tr><th>ID</th><th>Activo</th><th>Tipo</th><th>Descripción</th><th>Cant. Total</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="intervencionesTableBody"></tbody></table>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead><tr><th>ID</th><th>Activo</th><th>Tipo</th><th>Descripción</th><th>Cant. Total</th><th>Estado</th><th>Acciones</th></tr></thead>
+                        <tbody id="intervencionesTableBody"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -130,7 +135,10 @@
             <div class="card p-3">
                 <h4>Reporte de Avance de Intervenciones</h4>
                 <div class="table-responsive">
-                    <table class="table table-bordered"><thead><tr><th>Intervención</th><th>Activo</th><th>Total</th><th>Realizado</th><th>Pendiente</th><th>Estado</th></tr></thead><tbody id="reporteTableBody"></tbody></table>
+                    <table class="table table-bordered">
+                        <thead><tr><th>Intervención</th><th>Activo</th><th>Total</th><th>Realizado</th><th>Pendiente</th><th>Estado</th></tr></thead>
+                        <tbody id="reporteTableBody"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -150,32 +158,89 @@
     </div>
 </div>
 
-<!-- Modal Crear/Editar Usuario -->
-<div class="modal fade" id="modalUsuario" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Usuario</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="formUsuario"><input type="hidden" id="usuarioId"><div class="mb-3"><label>Usuario</label><input type="text" id="usuarioUsername" class="form-control" required></div><div class="mb-3"><label>Nombre</label><input type="text" id="usuarioNombre" class="form-control" required></div><div class="mb-3"><label>Contraseña</label><input type="password" id="usuarioPassword" class="form-control" placeholder="Dejar en blanco para mantener"></div><div class="mb-3"><label>Rol</label><select id="usuarioRol" class="form-select"><option value="tecnico">Técnico</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option></select></div><div class="mb-3"><div class="form-check"><input type="checkbox" id="usuarioActivo" class="form-check-input" checked> <label class="form-check-label">Activo</label></div></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" id="guardarUsuarioBtn">Guardar</button></div></div></div></div>
+<!-- Modal Usuario -->
+<div class="modal fade" id="modalUsuario" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Usuario</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form id="formUsuario">
+                    <input type="hidden" id="usuarioId">
+                    <div class="mb-3"><label>Usuario</label><input type="text" id="usuarioUsername" class="form-control" required></div>
+                    <div class="mb-3"><label>Nombre</label><input type="text" id="usuarioNombre" class="form-control" required></div>
+                    <div class="mb-3"><label>Contraseña</label><input type="password" id="usuarioPassword" class="form-control" placeholder="Dejar en blanco para mantener"></div>
+                    <div class="mb-3"><label>Rol</label><select id="usuarioRol" class="form-select"><option value="tecnico">Técnico</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option></select></div>
+                    <div class="mb-3"><div class="form-check"><input type="checkbox" id="usuarioActivo" class="form-check-input" checked> <label class="form-check-label">Activo</label></div></div>
+                </form>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" id="guardarUsuarioBtn">Guardar</button></div>
+        </div>
+    </div>
+</div>
 
-<!-- Modal Crear Activo -->
-<div class="modal fade" id="modalActivo" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Nuevo Activo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="formActivo"><div class="mb-3"><label>Código</label><input type="text" id="activoCodigo" class="form-control" required></div><div class="mb-3"><label>Nombre</label><input type="text" id="activoNombre" class="form-control" required></div><div class="mb-3"><label>Tipo</label><input type="text" id="activoTipo" class="form-control" required></div><div class="mb-3"><label>Ubicación</label><input type="text" id="activoUbicacion" class="form-control"></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" id="guardarActivoBtn">Guardar</button></div></div></div></div>
+<!-- Modal Activo -->
+<div class="modal fade" id="modalActivo" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Activo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form id="formActivo">
+                    <input type="hidden" id="activoId">
+                    <div class="mb-3"><label>Código</label><input type="text" id="activoCodigo" class="form-control" required></div>
+                    <div class="mb-3"><label>Nombre</label><input type="text" id="activoNombre" class="form-control" required></div>
+                    <div class="mb-3"><label>Tipo</label><input type="text" id="activoTipo" class="form-control" required></div>
+                    <div class="mb-3"><label>Ubicación</label><input type="text" id="activoUbicacion" class="form-control"></div>
+                </form>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" id="guardarActivoBtn">Guardar</button></div>
+        </div>
+    </div>
+</div>
 
-<!-- Modal Crear Intervención -->
-<div class="modal fade" id="modalIntervencion" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Nueva Intervención</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="formIntervencion"><div class="mb-3"><label>Activo</label><select id="intervActivoId" class="form-select" required></select></div><div class="mb-3"><label>Tipo</label><input type="text" id="intervTipo" class="form-control" required></div><div class="mb-3"><label>Descripción</label><textarea id="intervDescripcion" class="form-control"></textarea></div><div class="mb-3"><label>Cantidad Total</label><input type="number" step="any" id="intervCantidadTotal" class="form-control"></div><div class="mb-3"><label>Unidad</label><input type="text" id="intervUnidad" class="form-control"></div><div class="mb-3"><label>Fecha Límite</label><input type="date" id="intervFechaLimite" class="form-control"></div><div class="mb-3"><label>Expediente Ministerio</label><input type="text" id="intervExpediente" class="form-control"></div><div class="mb-3"><label>Técnico Asignado</label><select id="intervTecnicoId" class="form-select" required></select></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" id="guardarIntervencionBtn">Guardar</button></div></div></div></div>
+<!-- Modal Intervención -->
+<div class="modal fade" id="modalIntervencion" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Intervención</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form id="formIntervencion">
+                    <input type="hidden" id="intervId">
+                    <div class="mb-3"><label>Activo</label><select id="intervActivoId" class="form-select" required></select></div>
+                    <div class="mb-3"><label>Tipo</label><input type="text" id="intervTipo" class="form-control" required></div>
+                    <div class="mb-3"><label>Descripción</label><textarea id="intervDescripcion" class="form-control"></textarea></div>
+                    <div class="mb-3"><label>Cantidad Total</label><input type="number" step="any" id="intervCantidadTotal" class="form-control"></div>
+                    <div class="mb-3"><label>Unidad</label><input type="text" id="intervUnidad" class="form-control"></div>
+                    <div class="mb-3"><label>Fecha Límite</label><input type="date" id="intervFechaLimite" class="form-control"></div>
+                    <div class="mb-3"><label>Expediente Ministerio</label><input type="text" id="intervExpediente" class="form-control"></div>
+                    <div class="mb-3"><label>Técnico Asignado</label><select id="intervTecnicoId" class="form-select" required></select></div>
+                </form>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" id="guardarIntervencionBtn">Guardar</button></div>
+        </div>
+    </div>
+</div>
 
-<!-- Modal para Detalle de Intervención (técnico: sesiones activas, fotos, cerrar) -->
-<div class="modal fade" id="modalDetalleIntervencion" tabindex="-1" data-bs-backdrop="static"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Detalle de Intervención</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="detalleIntervBody"></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div></div></div></div>
+<!-- Modal Detalle Intervención -->
+<div class="modal fade" id="modalDetalleIntervencion" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Detalle de Intervención</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body" id="detalleIntervBody"></div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+        </div>
+    </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Configuración: Cambia la URL base de n8n según tu entorno
-    const N8N_BASE_URL = 'https://api.enusa.org';  // Ajusta a tu IP/puerto
-
-    // Variables globales
+    // ==================== CONFIGURACIÓN ====================
+    const N8N_BASE_URL = 'https://api.enusa.org';
     let currentUser = null;
-    let bootstrapInstance = null; // para modales
 
-    // Helper para mostrar/ocultar loading
+    // ==================== HELPERS ====================
     function showLoading() { document.getElementById('loading').style.display = 'flex'; }
     function hideLoading() { document.getElementById('loading').style.display = 'none'; }
 
-    // Llamadas a n8n
     async function apiCall(url, options = {}) {
         showLoading();
         try {
@@ -194,7 +259,7 @@
         }
     }
 
-    // Login
+    // ==================== LOGIN ====================
     document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const usuario = document.getElementById('usuario').value;
@@ -209,8 +274,9 @@
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 showDashboard();
             } else {
-                document.getElementById('loginError').classList.remove('d-none');
-                document.getElementById('loginError').innerText = data.error;
+                const errorDiv = document.getElementById('loginError');
+                errorDiv.classList.remove('d-none');
+                errorDiv.innerText = data.error;
             }
         } catch (err) { }
     });
@@ -219,7 +285,6 @@
         document.getElementById('loginContainer').style.display = 'none';
         document.getElementById('dashboard').style.display = 'block';
         document.getElementById('userName').innerHTML = `<i class="fas fa-user"></i> ${currentUser.nombre} (${currentUser.rol})`;
-        // Mostrar tabs según rol
         const isAdmin = currentUser.rol === 'admin';
         const isSupervisor = currentUser.rol === 'supervisor';
         const isTecnico = currentUser.rol === 'tecnico';
@@ -229,11 +294,9 @@
         document.getElementById('tabReporteLi').style.display = (isAdmin || isSupervisor) ? 'block' : 'none';
         document.getElementById('tabHojaVidaLi').style.display = (isAdmin || isSupervisor) ? 'block' : 'none';
         document.getElementById('tabMisIntervencionesLi').style.display = isTecnico ? 'block' : 'none';
-        // Activar primer tab
         const firstTab = isTecnico ? '#misIntervencionesTab' : (isAdmin ? '#usuariosTab' : '#activosTab');
         const tabTrigger = new bootstrap.Tab(document.querySelector(firstTab));
         tabTrigger.show();
-        // Cargar datos
         if (isTecnico) cargarMisIntervenciones();
         if (isAdmin) cargarUsuarios();
         if (isAdmin || isSupervisor) {
@@ -241,6 +304,7 @@
             cargarIntervenciones();
             cargarReporteAvance();
             cargarSelectActivos();
+            cargarSelectsParaModales();
         }
     }
 
@@ -249,7 +313,7 @@
         location.reload();
     });
 
-    // Cargar datos de técnico
+    // ==================== TÉCNICO ====================
     async function cargarMisIntervenciones() {
         const data = await apiCall(`${N8N_BASE_URL}/webhook/mis-intervenciones?tecnico_id=${currentUser.id}`);
         const container = document.getElementById('misIntervencionesList');
@@ -270,9 +334,7 @@
     }
 
     async function verDetalleTecnico(intervencionId) {
-        // Obtener detalle de la intervención (incluye sesiones)
         const detalle = await apiCall(`${N8N_BASE_URL}/webhook/detalle-intervencion?id=${intervencionId}`);
-        // Verificar si hay una sesión activa (sin fin)
         const sesionActiva = detalle.sesiones ? detalle.sesiones.find(s => s.fin === null) : null;
         let sesionId = sesionActiva ? sesionActiva.id : null;
         let contenido = `
@@ -288,22 +350,26 @@
         } else {
             contenido += `<button class="btn btn-primary" id="iniciarSesionBtn">Iniciar jornada</button>`;
         }
-        // Mostrar fotos existentes
         if (detalle.sesiones && detalle.sesiones.length) {
             contenido += `<hr><h6>Fotos anteriores</h6><div id="fotosAnteriores" class="d-flex flex-wrap"></div>`;
         }
         document.getElementById('detalleIntervBody').innerHTML = contenido;
-        // Cargar fotos
+        // cargar fotos (simplificado, asumiendo que existe webhook listar-fotos)
         if (detalle.sesiones && detalle.sesiones.length) {
             const fotosDiv = document.getElementById('fotosAnteriores');
             for (let ses of detalle.sesiones) {
-                const fotosSesion = await apiCall(`${N8N_BASE_URL}/webhook/listar-fotos?sesion_id=${ses.id}`); // necesitamos workflow listar-fotos? Podemos agregarlo después. Por ahora asumimos que no hay fotos.
-                // Simplemente mostramos un placeholder.
+                try {
+                    const fotos = await apiCall(`${N8N_BASE_URL}/webhook/listar-fotos?sesion_id=${ses.id}`);
+                    if (fotos && fotos.length) {
+                        fotos.forEach(f => {
+                            fotosDiv.innerHTML += `<img src="${f.url}" class="foto-preview img-thumbnail" onclick="window.open('${f.url}')">`;
+                        });
+                    }
+                } catch(e) { /* no hay fotos */ }
             }
         }
         const modal = new bootstrap.Modal(document.getElementById('modalDetalleIntervencion'));
         modal.show();
-        // Eventos
         if (!sesionActiva) {
             document.getElementById('iniciarSesionBtn').addEventListener('click', async () => {
                 await apiCall(`${N8N_BASE_URL}/webhook/iniciar-sesion`, {
@@ -315,19 +381,19 @@
                 alert('Sesión iniciada. Puedes tomar fotos ahora.');
             });
         } else {
-            document.getElementById('subirFotoBtn').addEventListener('click', async () => {
+            document.getElementById('subirFotoBtn').addEventListener('click', () => {
                 const file = document.getElementById('fotoInput').files[0];
                 if (!file) return alert('Selecciona una foto');
-                // Convertir a base64
                 const reader = new FileReader();
                 reader.onload = async function(e) {
-                    const base64 = e.target.result;
                     await apiCall(`${N8N_BASE_URL}/webhook/subir-foto`, {
                         method: 'POST',
-                        body: JSON.stringify({ sesion_id: sesionId, url: base64, subido_por: currentUser.id })
+                        body: JSON.stringify({ sesion_id: sesionId, url: e.target.result, subido_por: currentUser.id })
                     });
                     alert('Foto subida');
                     document.getElementById('fotoInput').value = '';
+                    modal.hide();
+                    cargarMisIntervenciones();
                 };
                 reader.readAsDataURL(file);
             });
@@ -345,7 +411,7 @@
         }
     }
 
-    // Funciones para admin/supervisor (resumidas)
+    // ==================== ADMIN / SUPERVISOR ====================
     async function cargarUsuarios() {
         const data = await apiCall(`${N8N_BASE_URL}/webhook/listar-usuarios`);
         const tbody = document.getElementById('usuariosTableBody');
@@ -353,18 +419,77 @@
             <tr>
                 <td>${u.id}</td><td>${u.usuario}</td><td>${u.nombre}</td><td>${u.rol}</td>
                 <td>${u.activo ? 'Sí' : 'No'}</td>
-                <td><button class="btn btn-sm btn-warning editar-usuario" data-id="${u.id}">Editar</button></td>
+                <td>
+                    <button class="btn btn-sm btn-warning editar-usuario" data-id="${u.id}">Editar</button>
+                    <button class="btn btn-sm btn-danger eliminar-usuario" data-id="${u.id}">Eliminar</button>
+                </td>
             </tr>
         `).join('');
-        document.querySelectorAll('.editar-usuario').forEach(btn => {
-            btn.addEventListener('click', () => editarUsuario(btn.dataset.id));
+        document.querySelectorAll('.editar-usuario').forEach(btn => btn.addEventListener('click', () => editarUsuario(btn.dataset.id)));
+        document.querySelectorAll('.eliminar-usuario').forEach(btn => btn.addEventListener('click', () => eliminarUsuario(btn.dataset.id)));
+    }
+
+    async function editarUsuario(id) {
+        const users = await apiCall(`${N8N_BASE_URL}/webhook/listar-usuarios`);
+        const user = users.find(u => u.id == id);
+        if (user) {
+            document.getElementById('usuarioId').value = user.id;
+            document.getElementById('usuarioUsername').value = user.usuario;
+            document.getElementById('usuarioNombre').value = user.nombre;
+            document.getElementById('usuarioRol').value = user.rol;
+            document.getElementById('usuarioActivo').checked = user.activo;
+            document.getElementById('usuarioPassword').value = '';
+            new bootstrap.Modal(document.getElementById('modalUsuario')).show();
+        }
+    }
+
+    async function eliminarUsuario(id) {
+        if (!confirm('¿Eliminar este usuario? Esta acción no se puede deshacer.')) return;
+        await apiCall(`${N8N_BASE_URL}/webhook/eliminar-usuario`, {
+            method: 'DELETE',
+            body: JSON.stringify({ id, admin_id: currentUser.id })
         });
+        cargarUsuarios();
     }
 
     async function cargarActivos() {
         const data = await apiCall(`${N8N_BASE_URL}/webhook/listar-activos`);
         const tbody = document.getElementById('activosTableBody');
-        tbody.innerHTML = data.map(a => `<tr><td>${a.id}</td><td>${a.codigo}</td><td>${a.nombre}</td><td>${a.tipo}</td><td>${a.ubicacion || ''}</td></tr>`).join('');
+        tbody.innerHTML = data.map(a => `
+            <tr>
+                <td>${a.id}</td><td>${a.codigo}</td><td>${a.nombre}</td><td>${a.tipo}</td><td>${a.ubicacion || ''}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning editar-activo" data-id="${a.id}">Editar</button>
+                    <button class="btn btn-sm btn-danger eliminar-activo" data-id="${a.id}">Eliminar</button>
+                </td>
+            </tr>
+        `).join('');
+        document.querySelectorAll('.editar-activo').forEach(btn => btn.addEventListener('click', () => editarActivo(btn.dataset.id)));
+        document.querySelectorAll('.eliminar-activo').forEach(btn => btn.addEventListener('click', () => eliminarActivo(btn.dataset.id)));
+    }
+
+    async function editarActivo(id) {
+        const activos = await apiCall(`${N8N_BASE_URL}/webhook/listar-activos`);
+        const activo = activos.find(a => a.id == id);
+        if (activo) {
+            document.getElementById('activoId').value = activo.id;
+            document.getElementById('activoCodigo').value = activo.codigo;
+            document.getElementById('activoNombre').value = activo.nombre;
+            document.getElementById('activoTipo').value = activo.tipo;
+            document.getElementById('activoUbicacion').value = activo.ubicacion || '';
+            new bootstrap.Modal(document.getElementById('modalActivo')).show();
+        }
+    }
+
+    async function eliminarActivo(id) {
+        if (!confirm('¿Eliminar este activo? Se perderán todas las intervenciones asociadas.')) return;
+        await apiCall(`${N8N_BASE_URL}/webhook/eliminar-activo`, {
+            method: 'DELETE',
+            body: JSON.stringify({ id, admin_id: currentUser.id })
+        });
+        cargarActivos();
+        cargarSelectActivos();
+        cargarSelectsParaModales();
     }
 
     async function cargarIntervenciones() {
@@ -372,14 +497,18 @@
         const tbody = document.getElementById('intervencionesTableBody');
         tbody.innerHTML = data.map(i => `
             <tr>
-                <td>${i.id}</td><td>${i.activo_nombre}</td><td>${i.tipo}</td><td>${i.descripcion}</td>
+                <td>${i.id}</td><td>${i.activo_nombre}</td><td>${i.tipo}</td><td>${i.descripcion || ''}</td>
                 <td>${i.cantidad_total || ''} ${i.unidad || ''}</td><td>${i.estado}</td>
-                <td><button class="btn btn-sm btn-info ver-detalle-intervencion" data-id="${i.id}">Ver detalle</button></td>
+                <td>
+                    <button class="btn btn-sm btn-info ver-detalle-intervencion" data-id="${i.id}">Ver</button>
+                    <button class="btn btn-sm btn-warning editar-intervencion" data-id="${i.id}">Editar</button>
+                    <button class="btn btn-sm btn-danger eliminar-intervencion" data-id="${i.id}">Eliminar</button>
+                </td>
             </tr>
         `).join('');
-        document.querySelectorAll('.ver-detalle-intervencion').forEach(btn => {
-            btn.addEventListener('click', () => verDetalleAdmin(btn.dataset.id));
-        });
+        document.querySelectorAll('.ver-detalle-intervencion').forEach(btn => btn.addEventListener('click', () => verDetalleAdmin(btn.dataset.id)));
+        document.querySelectorAll('.editar-intervencion').forEach(btn => btn.addEventListener('click', () => editarIntervencion(btn.dataset.id)));
+        document.querySelectorAll('.eliminar-intervencion').forEach(btn => btn.addEventListener('click', () => eliminarIntervencion(btn.dataset.id)));
     }
 
     async function verDetalleAdmin(id) {
@@ -396,6 +525,34 @@
         new bootstrap.Modal(document.getElementById('modalDetalleIntervencion')).show();
     }
 
+    async function editarIntervencion(id) {
+        const detalle = await apiCall(`${N8N_BASE_URL}/webhook/detalle-intervencion?id=${id}`);
+        document.getElementById('intervId').value = detalle.id;
+        document.getElementById('intervActivoId').value = detalle.activo_id;
+        document.getElementById('intervTipo').value = detalle.tipo;
+        document.getElementById('intervDescripcion').value = detalle.descripcion || '';
+        document.getElementById('intervCantidadTotal').value = detalle.cantidad_total || '';
+        document.getElementById('intervUnidad').value = detalle.unidad || '';
+        document.getElementById('intervFechaLimite').value = detalle.fecha_limite || '';
+        document.getElementById('intervExpediente').value = detalle.expediente_ministerio || '';
+        // cargar técnicos y seleccionar el asignado
+        const users = await apiCall(`${N8N_BASE_URL}/webhook/listar-usuarios`);
+        const tecnicos = users.filter(u => u.rol === 'tecnico');
+        const selectTecnico = document.getElementById('intervTecnicoId');
+        selectTecnico.innerHTML = tecnicos.map(t => `<option value="${t.id}" ${detalle.tecnico_asignado_id == t.id ? 'selected' : ''}>${t.nombre}</option>`).join('');
+        new bootstrap.Modal(document.getElementById('modalIntervencion')).show();
+    }
+
+    async function eliminarIntervencion(id) {
+        if (!confirm('¿Eliminar esta intervención? Se perderán todas las sesiones y fotos.')) return;
+        await apiCall(`${N8N_BASE_URL}/webhook/eliminar-intervencion`, {
+            method: 'DELETE',
+            body: JSON.stringify({ id, admin_id: currentUser.id })
+        });
+        cargarIntervenciones();
+        cargarReporteAvance();
+    }
+
     async function cargarReporteAvance() {
         const data = await apiCall(`${N8N_BASE_URL}/webhook/reporte-avance`);
         const tbody = document.getElementById('reporteTableBody');
@@ -406,19 +563,45 @@
         const data = await apiCall(`${N8N_BASE_URL}/webhook/listar-activos`);
         const select = document.getElementById('selectActivo');
         select.innerHTML = '<option value="">Seleccione...</option>' + data.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
-        document.getElementById('btnVerHojaVida').addEventListener('click', async () => {
+        document.getElementById('btnVerHojaVida').onclick = async () => {
             const activoId = select.value;
             if (!activoId) return alert('Seleccione un activo');
             const hv = await apiCall(`${N8N_BASE_URL}/webhook/hoja-vida-activo?activo_id=${activoId}`);
             document.getElementById('hojaVidaResultado').innerHTML = `<pre>${JSON.stringify(hv, null, 2)}</pre>`;
-        });
+        };
     }
 
-    // Editar usuario, crear activo, crear intervención (modales)
+    async function cargarSelectsParaModales() {
+        const activos = await apiCall(`${N8N_BASE_URL}/webhook/listar-activos`);
+        const selectActivo = document.getElementById('intervActivoId');
+        selectActivo.innerHTML = activos.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
+        const users = await apiCall(`${N8N_BASE_URL}/webhook/listar-usuarios`);
+        const tecnicos = users.filter(u => u.rol === 'tecnico');
+        const selectTecnico = document.getElementById('intervTecnicoId');
+        selectTecnico.innerHTML = tecnicos.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+    }
+
+    // Guardar Usuario (crear/editar)
     document.getElementById('guardarUsuarioBtn').addEventListener('click', async () => {
-        // Implementar creación/edición
+        const id = document.getElementById('usuarioId').value;
+        const usuario = document.getElementById('usuarioUsername').value;
+        const nombre = document.getElementById('usuarioNombre').value;
+        const password = document.getElementById('usuarioPassword').value;
+        const rol = document.getElementById('usuarioRol').value;
+        const activo = document.getElementById('usuarioActivo').checked;
+        if (!usuario || !nombre) return alert('Usuario y nombre son obligatorios');
+        const data = { admin_id: currentUser.id, usuario, nombre, rol, activo };
+        if (password) data.password = password;
+        if (id) data.id = id;
+        const url = id ? `${N8N_BASE_URL}/webhook/actualizar-usuario` : `${N8N_BASE_URL}/webhook/crear-usuario`;
+        await apiCall(url, { method: 'POST', body: JSON.stringify(data) });
+        bootstrap.Modal.getInstance(document.getElementById('modalUsuario')).hide();
+        cargarUsuarios();
     });
+
+    // Guardar Activo
     document.getElementById('guardarActivoBtn').addEventListener('click', async () => {
+        const id = document.getElementById('activoId').value;
         const data = {
             codigo: document.getElementById('activoCodigo').value,
             nombre: document.getElementById('activoNombre').value,
@@ -426,11 +609,18 @@
             ubicacion: document.getElementById('activoUbicacion').value,
             creado_por: currentUser.id
         };
-        await apiCall(`${N8N_BASE_URL}/webhook/crear-activo`, { method: 'POST', body: JSON.stringify(data) });
+        if (id) data.id = id;
+        const url = id ? `${N8N_BASE_URL}/webhook/actualizar-activo` : `${N8N_BASE_URL}/webhook/crear-activo`;
+        await apiCall(url, { method: 'POST', body: JSON.stringify(data) });
         bootstrap.Modal.getInstance(document.getElementById('modalActivo')).hide();
         cargarActivos();
+        cargarSelectActivos();
+        cargarSelectsParaModales();
     });
+
+    // Guardar Intervención
     document.getElementById('guardarIntervencionBtn').addEventListener('click', async () => {
+        const id = document.getElementById('intervId').value;
         const data = {
             activo_id: document.getElementById('intervActivoId').value,
             tipo: document.getElementById('intervTipo').value,
@@ -442,20 +632,13 @@
             creado_por: currentUser.id,
             tecnico_id: document.getElementById('intervTecnicoId').value
         };
-        await apiCall(`${N8N_BASE_URL}/webhook/crear-intervencion`, { method: 'POST', body: JSON.stringify(data) });
+        if (id) data.id = id;
+        const url = id ? `${N8N_BASE_URL}/webhook/actualizar-intervencion` : `${N8N_BASE_URL}/webhook/crear-intervencion`;
+        await apiCall(url, { method: 'POST', body: JSON.stringify(data) });
         bootstrap.Modal.getInstance(document.getElementById('modalIntervencion')).hide();
         cargarIntervenciones();
+        cargarReporteAvance();
     });
-
-    // Cargar selects para modales
-    async function cargarSelects() {
-        const activos = await apiCall(`${N8N_BASE_URL}/webhook/listar-activos`);
-        const selectActivo = document.getElementById('intervActivoId');
-        selectActivo.innerHTML = activos.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
-        const tecnicos = await apiCall(`${N8N_BASE_URL}/webhook/listar-usuarios`);
-        const selectTecnico = document.getElementById('intervTecnicoId');
-        selectTecnico.innerHTML = tecnicos.filter(u => u.rol === 'tecnico').map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
-    }
 
     // Inicialización
     (function init() {
@@ -464,7 +647,7 @@
             currentUser = JSON.parse(stored);
             showDashboard();
         }
-        cargarSelects();
+        cargarSelectsParaModales();
     })();
 </script>
 </body>
