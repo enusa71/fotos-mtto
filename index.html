@@ -18,6 +18,24 @@
         .loading { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center; color: white; }
         .table-responsive { overflow-x: auto; }
         .btn-sm { margin: 2px; }
+        /* Toast personalizado */
+        .custom-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #28a745;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10000;
+            font-weight: 500;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .custom-toast.error { background-color: #dc3545; }
+        .custom-toast.warning { background-color: #ffc107; color: #212529; }
     </style>
 </head>
 <body>
@@ -240,6 +258,21 @@
     function showLoading() { document.getElementById('loading').style.display = 'flex'; }
     function hideLoading() { document.getElementById('loading').style.display = 'none'; }
 
+    // Toast personalizado
+    function showNotification(message, type = 'success') {
+        const existingToast = document.querySelector('.custom-toast');
+        if (existingToast) existingToast.remove();
+        const toast = document.createElement('div');
+        toast.className = `custom-toast ${type}`;
+        toast.innerText = message;
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.style.opacity = '1'; }, 10);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
     // Llamada genérica a la API (maneja respuestas con success: false y normaliza arrays)
     async function apiCall(url, options = {}) {
         showLoading();
@@ -261,7 +294,7 @@
             }
             return data;
         } catch (error) {
-            alert('Error: ' + error.message);
+            showNotification('Error: ' + error.message, 'error');
             throw error;
         } finally {
             hideLoading();
@@ -383,19 +416,19 @@
                 });
                 modal.hide();
                 cargarMisIntervenciones();
-                alert('Sesión iniciada. Puedes tomar fotos ahora.');
+                showNotification('Sesión iniciada. Puedes tomar fotos ahora.');
             });
         } else {
             document.getElementById('subirFotoBtn').addEventListener('click', () => {
                 const file = document.getElementById('fotoInput').files[0];
-                if (!file) return alert('Selecciona una foto');
+                if (!file) return showNotification('Selecciona una foto', 'warning');
                 const reader = new FileReader();
                 reader.onload = async function(e) {
                     await apiCall(`${N8N_BASE_URL}/webhook/subir-foto`, {
                         method: 'POST',
                         body: JSON.stringify({ sesion_id: sesionId, url: e.target.result, subido_por: currentUser.id })
                     });
-                    alert('Foto subida');
+                    showNotification('Foto subida');
                     document.getElementById('fotoInput').value = '';
                     modal.hide();
                     cargarMisIntervenciones();
@@ -411,7 +444,7 @@
                 });
                 modal.hide();
                 cargarMisIntervenciones();
-                alert('Sesión cerrada');
+                showNotification('Sesión cerrada');
             });
         }
     }
@@ -456,11 +489,11 @@
     async function eliminarUsuario(id) {
         if (!confirm('¿Eliminar este usuario? Esta acción no se puede deshacer.')) return;
         try {
-            const result = await apiCall(`${N8N_BASE_URL}/webhook/eliminar-usuario`, {
+            await apiCall(`${N8N_BASE_URL}/webhook/eliminar-usuario`, {
                 method: 'DELETE',
                 body: JSON.stringify({ id, admin_id: currentUser.id })
             });
-            alert('Usuario eliminado correctamente');
+            showNotification('Usuario eliminado correctamente');
             cargarUsuarios();
         } catch (err) {}
     }
@@ -503,11 +536,11 @@
     async function eliminarActivo(id) {
         if (!confirm('¿Eliminar este activo? Se perderán todas las intervenciones asociadas.')) return;
         try {
-            const result = await apiCall(`${N8N_BASE_URL}/webhook/eliminar-activo`, {
+            await apiCall(`${N8N_BASE_URL}/webhook/eliminar-activo`, {
                 method: 'DELETE',
                 body: JSON.stringify({ id, creado_por: currentUser.id })
             });
-            alert('Activo eliminado correctamente');
+            showNotification('Activo eliminado correctamente');
             cargarActivos();
             cargarSelectActivos();
             cargarSelectsParaModales();
@@ -577,7 +610,7 @@
                 method: 'DELETE',
                 body: JSON.stringify({ id, creado_por: currentUser.id })
             });
-            alert('Intervención eliminada correctamente');
+            showNotification('Intervención eliminada correctamente');
             cargarIntervenciones();
             cargarReporteAvance();
         } catch (err) {}
@@ -597,7 +630,7 @@
         select.innerHTML = '<option value="">Seleccione...</option>' + data.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
         document.getElementById('btnVerHojaVida').onclick = async () => {
             const activoId = select.value;
-            if (!activoId) return alert('Seleccione un activo');
+            if (!activoId) return showNotification('Seleccione un activo', 'warning');
             const hv = await apiCall(`${N8N_BASE_URL}/webhook/hoja-vida-activo?activo_id=${activoId}`);
             document.getElementById('hojaVidaResultado').innerHTML = `<pre>${JSON.stringify(hv, null, 2)}</pre>`;
         };
@@ -621,14 +654,14 @@
         const password = document.getElementById('usuarioPassword').value;
         const rol = document.getElementById('usuarioRol').value;
         const activo = document.getElementById('usuarioActivo').checked;
-        if (!usuario || !nombre) return alert('Usuario y nombre son obligatorios');
+        if (!usuario || !nombre) return showNotification('Usuario y nombre son obligatorios', 'warning');
         const data = { admin_id: currentUser.id, usuario, nombre, rol, activo };
         if (password) data.password = password;
         if (id) data.id = id;
         const url = id ? `${N8N_BASE_URL}/webhook/actualizar-usuario` : `${N8N_BASE_URL}/webhook/crear-usuario`;
         try {
             await apiCall(url, { method: 'POST', body: JSON.stringify(data) });
-            alert('Usuario guardado correctamente');
+            showNotification('Usuario guardado correctamente');
             bootstrap.Modal.getInstance(document.getElementById('modalUsuario')).hide();
             cargarUsuarios();
         } catch (err) {}
@@ -647,7 +680,7 @@
         const url = id ? `${N8N_BASE_URL}/webhook/actualizar-activo` : `${N8N_BASE_URL}/webhook/crear-activo`;
         try {
             await apiCall(url, { method: 'POST', body: JSON.stringify(data) });
-            alert('Activo guardado correctamente');
+            showNotification('Activo guardado correctamente');
             bootstrap.Modal.getInstance(document.getElementById('modalActivo')).hide();
             cargarActivos();
             cargarSelectActivos();
@@ -672,7 +705,7 @@
         const url = id ? `${N8N_BASE_URL}/webhook/actualizar-intervencion` : `${N8N_BASE_URL}/webhook/crear-intervencion`;
         try {
             await apiCall(url, { method: 'POST', body: JSON.stringify(data) });
-            alert('Intervención guardada correctamente');
+            showNotification('Intervención guardada correctamente');
             bootstrap.Modal.getInstance(document.getElementById('modalIntervencion')).hide();
             cargarIntervenciones();
             cargarReporteAvance();
