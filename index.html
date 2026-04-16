@@ -140,7 +140,7 @@
                 <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalIntervencion">Nueva Intervención</button>
                 <div class="table-responsive">
                     <table class="table table-striped">
-                        <thead><tr><th>ID</th><th>Activo</th><th>Tipo</th><th>Descripción</th><th>Cant. Total</th><th>Estado</th><th>Acciones</th></tr></thead>
+                        <thead><tr><th>ID</th><th>Activo</th><th>Tipo</th><th>Descripción</th><th>Cant. Total</th><th>Estado</th><th>Acciones</th><tr></thead>
                         <tbody id="intervencionesTableBody"></tbody>
                     </table>
                 </div>
@@ -248,6 +248,25 @@
     </div>
 </div>
 
+<!-- Modal de confirmación personalizado (reemplaza confirm()) -->
+<div class="modal fade" id="confirmModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar acción</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="confirmModalMessage">
+                ¿Estás seguro?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmModalOk">Aceptar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // ==================== CONFIGURACIÓN ====================
@@ -271,6 +290,29 @@
             toast.style.opacity = '0';
             setTimeout(() => toast.remove(), 300);
         }, 3000);
+    }
+
+    // Modal de confirmación personalizado (retorna Promise)
+    function showConfirm(message) {
+        return new Promise((resolve) => {
+            const modalEl = document.getElementById('confirmModal');
+            const modal = new bootstrap.Modal(modalEl);
+            document.getElementById('confirmModalMessage').innerText = message;
+            const okBtn = document.getElementById('confirmModalOk');
+            const handleOk = () => {
+                modal.hide();
+                resolve(true);
+                okBtn.removeEventListener('click', handleOk);
+            };
+            const handleHide = () => {
+                resolve(false);
+                modalEl.removeEventListener('hidden.bs.modal', handleHide);
+                okBtn.removeEventListener('click', handleOk);
+            };
+            okBtn.addEventListener('click', handleOk);
+            modalEl.addEventListener('hidden.bs.modal', handleHide, { once: true });
+            modal.show();
+        });
     }
 
     // Llamada genérica a la API (maneja respuestas con success: false y normaliza arrays)
@@ -487,7 +529,8 @@
     }
 
     async function eliminarUsuario(id) {
-        if (!confirm('¿Eliminar este usuario? Esta acción no se puede deshacer.')) return;
+        const confirmed = await showConfirm('¿Eliminar este usuario? Esta acción no se puede deshacer.');
+        if (!confirmed) return;
         try {
             await apiCall(`${N8N_BASE_URL}/webhook/eliminar-usuario`, {
                 method: 'DELETE',
@@ -534,7 +577,8 @@
     }
 
     async function eliminarActivo(id) {
-        if (!confirm('¿Eliminar este activo? Se perderán todas las intervenciones asociadas.')) return;
+        const confirmed = await showConfirm('¿Eliminar este activo? Se perderán todas las intervenciones asociadas.');
+        if (!confirmed) return;
         try {
             await apiCall(`${N8N_BASE_URL}/webhook/eliminar-activo`, {
                 method: 'DELETE',
@@ -604,7 +648,8 @@
     }
 
     async function eliminarIntervencion(id) {
-        if (!confirm('¿Eliminar esta intervención? Se perderán todas las sesiones y fotos.')) return;
+        const confirmed = await showConfirm('¿Eliminar esta intervención? Se perderán todas las sesiones y fotos.');
+        if (!confirmed) return;
         try {
             await apiCall(`${N8N_BASE_URL}/webhook/eliminar-intervencion`, {
                 method: 'DELETE',
