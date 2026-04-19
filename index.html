@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <title>Mantenimiento Zona Franca</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -11,14 +11,60 @@
         .card { border-radius: 20px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .login-container { max-width: 400px; margin: 80px auto; }
         .dashboard { display: none; }
-        .custom-toast { position: fixed; bottom: 20px; right: 20px; background: #28a745; color: white; padding: 12px 20px; border-radius: 40px; z-index: 10000; opacity: 0; transition: opacity 0.3s; pointer-events: none; font-weight: 500; }
+        .custom-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 40px;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            font-weight: 500;
+        }
         .custom-toast.error { background: #dc3545; }
         .custom-toast.warning { background: #ffc107; color: #212529; }
         .foto-preview { max-width: 80px; margin: 5px; border-radius: 8px; cursor: pointer; }
         .table-responsive { overflow-x: auto; }
         .btn-sm { margin: 2px; }
-        .loading { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center; color: white; }
-        @media (max-width: 768px) { .table-responsive { font-size: 0.8rem; } }
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        .camera-container {
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        video, canvas {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .zoom-slider {
+            width: 80%;
+            margin: 10px auto;
+        }
+        @media (max-width: 768px) {
+            .table-responsive { font-size: 0.8rem; }
+            .camera-container { max-width: 100%; }
+        }
     </style>
 </head>
 <body>
@@ -57,84 +103,12 @@
     </ul>
 
     <div class="tab-content mt-3">
-        <!-- Mis Intervenciones (técnico) -->
-        <div class="tab-pane fade" id="misIntervenciones">
-            <div class="card p-3">
-                <h4>Mis Intervenciones Asignadas</h4>
-                <div id="misIntervencionesList" class="list-group"></div>
-            </div>
-        </div>
-
-        <!-- Usuarios (admin) -->
-        <div class="tab-pane fade" id="usuarios">
-            <div class="card p-3">
-                <h4>Gestión de Usuarios</h4>
-                <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalUsuario">+ Nuevo Usuario</button>
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead><tr><th>ID</th><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Activo</th><th>Acciones</th></tr></thead>
-                        <tbody id="usuariosTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Activos -->
-        <div class="tab-pane fade" id="activos">
-            <div class="card p-3">
-                <h4>Gestión de Activos</h4>
-                <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalActivo">+ Nuevo Activo</button>
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Tipo</th><th>Ubicación</th><th>Acciones</th></tr></thead>
-                        <tbody id="activosTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Intervenciones -->
-        <div class="tab-pane fade" id="intervenciones">
-            <div class="card p-3">
-                <h4>Intervenciones</h4>
-                <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalIntervencion">+ Nueva Intervención</button>
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead><tr><th>ID</th><th>Activo</th><th>Tipo</th><th>Fechas plan</th><th>Estado</th><th>Acciones</th></tr></thead>
-                        <tbody id="intervencionesTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Reporte Avance -->
-        <div class="tab-pane fade" id="reporte">
-            <div class="card p-3">
-                <h4>Reporte de Avance</h4>
-                <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <thead><tr><th>Activo</th><th>Tipo</th><th>Fechas plan</th><th>Fechas real</th><th>Estado</th><th>Fotos (A/D)</th></tr></thead>
-                        <tbody id="reporteTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Hoja de Vida -->
-        <div class="tab-pane fade" id="hojaVida">
-            <div class="card p-3">
-                <h4>Hoja de Vida de Activo</h4>
-                <div class="row">
-                    <div class="col-md-4">
-                        <select id="selectActivo" class="form-select"></select>
-                        <button id="btnVerHojaVida" class="btn btn-secondary mt-2 w-100">Consultar</button>
-                    </div>
-                    <div class="col-md-8">
-                        <div id="hojaVidaResultado"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <div class="tab-pane fade" id="misIntervenciones"><div class="card p-3"><h4>Mis Intervenciones Asignadas</h4><div id="misIntervencionesList" class="list-group"></div></div></div>
+        <div class="tab-pane fade" id="usuarios"><div class="card p-3"><h4>Gestión de Usuarios</h4><button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalUsuario">+ Nuevo Usuario</button><div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Activo</th><th>Acciones</th></tr></thead><tbody id="usuariosTableBody"></tbody></table></div></div></div>
+        <div class="tab-pane fade" id="activos"><div class="card p-3"><h4>Gestión de Activos</h4><button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalActivo">+ Nuevo Activo</button><div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Tipo</th><th>Ubicación</th><th>Acciones</th></tr></thead><tbody id="activosTableBody"></tbody></td></div></div></div>
+        <div class="tab-pane fade" id="intervenciones"><div class="card p-3"><h4>Intervenciones</h4><button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalIntervencion">+ Nueva Intervención</button><div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Activo</th><th>Tipo</th><th>Fechas plan</th><th>Estado</th><th>Acciones</th></td></thead><tbody id="intervencionesTableBody"></tbody></table></div></div></div>
+        <div class="tab-pane fade" id="reporte"><div class="card p-3"><h4>Reporte de Avance</h4><div class="table-responsive"><table class="table table-bordered"><thead><tr><th>Activo</th><th>Tipo</th><th>Fechas plan</th><th>Fechas real</th><th>Estado</th><th>Fotos (A/D)</th></tr></thead><tbody id="reporteTableBody"></tbody></table></div></div></div>
+        <div class="tab-pane fade" id="hojaVida"><div class="card p-3"><h4>Hoja de Vida de Activo</h4><div class="row"><div class="col-md-4"><select id="selectActivo" class="form-select"></select><button id="btnVerHojaVida" class="btn btn-secondary mt-2 w-100">Consultar</button></div><div class="col-md-8"><div id="hojaVidaResultado"></div></div></div></div></div>
     </div>
 </div>
 
@@ -211,12 +185,40 @@
     </div>
 </div>
 
+<!-- Modal Cámara -->
+<div class="modal fade" id="modalCamera" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Tomar foto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body text-center">
+                <div class="camera-container">
+                    <video id="cameraVideo" autoplay playsinline></video>
+                    <canvas id="cameraCanvas" style="display:none;"></canvas>
+                </div>
+                <div class="mt-2">
+                    <input type="range" id="zoomSlider" class="zoom-slider" min="1" max="3" step="0.05" value="1">
+                    <label>Zoom</label>
+                </div>
+                <div class="mt-3">
+                    <button id="btnTakePhoto" class="btn btn-primary">Tomar foto</button>
+                    <button id="btnRetakePhoto" class="btn btn-warning" style="display:none;">Repetir foto</button>
+                    <button id="btnAcceptPhoto" class="btn btn-success" style="display:none;">Aceptar y subir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // ==================== CONFIGURACIÓN ====================
     const N8N_BASE_URL = 'https://api.enusa.org';
     const WEBHOOK_PREFIX = 'mtto_01_';
     let currentUser = null;
+    let currentStream = null;
+    let currentZoom = 1;
+    let photoData = null;
+    let currentSesionId = null;
 
     // Notificaciones
     function showNotification(msg, type = 'success') {
@@ -254,14 +256,8 @@
         try {
             const resp = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...options });
             let data = await resp.json();
-            // Normalizar: si la respuesta es un objeto, lo convertimos en array de un elemento
-            if (!Array.isArray(data)) {
-                data = [data];
-            }
-            // Verificar si el primer elemento tiene la propiedad success = false
-            if (data.length > 0 && data[0].success === false) {
-                throw new Error(data[0].error || 'Error');
-            }
+            if (!Array.isArray(data)) data = [data];
+            if (data.length > 0 && data[0].success === false) throw new Error(data[0].error || 'Error');
             if (!resp.ok) throw new Error(data.error || 'Error HTTP');
             return data;
         } catch (err) {
@@ -316,103 +312,11 @@
 
     document.getElementById('logoutBtn').onclick = () => { localStorage.clear(); location.reload(); };
 
-    // ==================== TÉCNICO ====================
-    async function cargarMisIntervenciones() {
-        const data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}mis-intervenciones?tecnico_id=${currentUser.id}`);
-        const container = document.getElementById('misIntervencionesList');
-        if (!data.length) { container.innerHTML = '<div class="alert alert-info">No hay intervenciones asignadas.</div>'; return; }
-        container.innerHTML = data.map(i => `
-            <div class="list-group-item">
-                <div class="d-flex justify-content-between">
-                    <h5>${i.activo_nombre} - ${i.tipo_mantenimiento}</h5>
-                    <button class="btn btn-sm btn-primary ver-detalle" data-id="${i.id}">Trabajar</button>
-                </div>
-                <p>${i.descripcion || ''} | Plan: ${i.fecha_inicio_plan} a ${i.fecha_fin_plan} | Estado: ${i.estado}</p>
-            </div>
-        `).join('');
-        document.querySelectorAll('.ver-detalle').forEach(btn => btn.onclick = () => verDetalleTecnico(btn.dataset.id));
-    }
-
-    async function verDetalleTecnico(intervId) {
-        const detalle = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}detalle-intervencion?id=${intervId}`);
-        if (!detalle.length) return;
-        const info = detalle[0];
-        let sesionActiva = info.sesiones ? info.sesiones.find(s => s.fin === null) : null;
-        let sesionId = sesionActiva ? sesionActiva.id : null;
-        let html = `<h5>${info.activo_nombre}</h5><p><strong>${info.tipo_mantenimiento}</strong><br>Plan: ${info.fecha_inicio_plan} a ${info.fecha_fin_plan}<br>Descripción: ${info.descripcion}</p>`;
-        if (sesionActiva) {
-            html += `<div class="alert alert-info">Sesión activa desde ${new Date(sesionActiva.inicio).toLocaleString()}</div>`;
-            html += `
-                <div class="row">
-                    <div class="col-md-6"><label>Tipo de foto</label><select id="tipoFoto" class="form-select"><option value="antes">Antes</option><option value="durante">Durante</option><option value="despues">Después</option></select></div>
-                    <div class="col-md-6"><label>Subir foto</label><input type="file" id="fotoFile" accept="image/*" class="form-control"></div>
-                </div>
-                <button class="btn btn-secondary mt-2" id="subirFotoBtn">Subir foto</button>
-                <hr>
-                <label>Cantidad realizada</label><input type="number" id="cantidadRealizada" class="form-control">
-                <label>Comentario</label><textarea id="comentarioCierre" class="form-control"></textarea>
-                <button class="btn btn-success mt-2" id="cerrarSesionBtn">Cerrar jornada</button>
-            `;
-        } else {
-            html += `<button class="btn btn-primary" id="iniciarSesionBtn">Iniciar jornada</button>`;
-        }
-        html += `<hr><h6>Fotos registradas</h6><div id="fotosPrevias" class="d-flex flex-wrap"></div>`;
-        document.getElementById('detalleIntervBody').innerHTML = html;
-        const modal = new bootstrap.Modal(document.getElementById('modalDetalleIntervencion'));
-        modal.show();
-
-        // Cargar fotos existentes
-        if (info.sesiones) {
-            const fotosDiv = document.getElementById('fotosPrevias');
-            for (let ses of info.sesiones) {
-                try {
-                    const fotos = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-fotos?sesion_id=${ses.id}`);
-                    if (fotos.length) {
-                        fotos.forEach(f => {
-                            fotosDiv.innerHTML += `<img src="${f.url}" class="foto-preview" title="${f.tipo_foto} - ${new Date(f.subida_en).toLocaleString()}" onclick="window.open('${f.url}')">`;
-                        });
-                    }
-                } catch(e) { /* no hay fotos */ }
-            }
-        }
-
-        if (!sesionActiva) {
-            document.getElementById('iniciarSesionBtn').onclick = async () => {
-                await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}iniciar-sesion`, { method: 'POST', body: JSON.stringify({ intervencion_id: intervId, tecnico_id: currentUser.id }) });
-                modal.hide();
-                cargarMisIntervenciones();
-                showNotification('Sesión iniciada. Puedes tomar fotos ahora.');
-            };
-        } else {
-            document.getElementById('subirFotoBtn').onclick = () => {
-                const file = document.getElementById('fotoFile').files[0];
-                if (!file) return showNotification('Seleccione una foto', 'warning');
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}subir-foto`, { method: 'POST', body: JSON.stringify({ sesion_id: sesionId, tipo_foto: document.getElementById('tipoFoto').value, foto_base64: e.target.result, tecnico_id: currentUser.id }) });
-                    showNotification('Foto subida correctamente');
-                    document.getElementById('fotoFile').value = '';
-                    modal.hide();
-                    cargarMisIntervenciones();
-                };
-                reader.readAsDataURL(file);
-            };
-            document.getElementById('cerrarSesionBtn').onclick = async () => {
-                const cantidad = document.getElementById('cantidadRealizada').value;
-                const comentario = document.getElementById('comentarioCierre').value;
-                await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}cerrar-sesion`, { method: 'POST', body: JSON.stringify({ sesion_id: sesionId, cantidad_realizada: cantidad, comentario }) });
-                modal.hide();
-                cargarMisIntervenciones();
-                showNotification('Sesión cerrada correctamente');
-            };
-        }
-    }
-
-    // ==================== ADMIN / SUPERVISOR ====================
+    // ==================== ADMIN / SUPERVISOR (CRUD) ====================
     async function cargarUsuarios() {
         let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-usuarios`);
         const tbody = document.getElementById('usuariosTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay usuarios</tr>'; return; }
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay usuarios</td></tr>'; return; }
         tbody.innerHTML = data.map(u => `
             <tr>
                 <td>${u.id}</td>
@@ -454,7 +358,7 @@
     async function cargarActivos() {
         let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-activos`);
         const tbody = document.getElementById('activosTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay activos</tr>'; return; }
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay activos</td></tr>'; return; }
         tbody.innerHTML = data.map(a => `
             <tr>
                 <td>${a.id}</td>
@@ -497,7 +401,7 @@
     async function cargarIntervenciones() {
         let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-intervenciones`);
         const tbody = document.getElementById('intervencionesTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay intervenciones</tr>'; return; }
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay intervenciones</td></tr>'; return; }
         tbody.innerHTML = data.map(i => `
             <tr>
                 <td>${i.id}</td>
@@ -548,11 +452,8 @@
         const tecnicos = users.filter(u => u.rol === 'tecnico');
         const selectTecnico = document.getElementById('intervTecnicoId');
         selectTecnico.innerHTML = tecnicos.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
-        // Obtener técnico asignado (simplificado)
-        try {
-            const asignaciones = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-tecnicos-por-intervencion?id=${d.id}`);
-            if (asignaciones.length) selectTecnico.value = asignaciones[0].tecnico_id;
-        } catch(e) {}
+        // Si hay técnico asignado (opcional)
+        if (d.tecnico_id) selectTecnico.value = d.tecnico_id;
         new bootstrap.Modal(document.getElementById('modalIntervencion')).show();
     }
 
@@ -567,7 +468,7 @@
     async function cargarReporteAvance() {
         let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}reporte-avance`);
         const tbody = document.getElementById('reporteTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay datos</tr>'; return; }
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay datos</td></tr>'; return; }
         tbody.innerHTML = data.map(r => `
             <tr>
                 <td>${r.activo || ''}</td>
@@ -600,6 +501,194 @@
         const tecnicos = users.filter(u => u.rol === 'tecnico');
         const selectTecnico = document.getElementById('intervTecnicoId');
         selectTecnico.innerHTML = tecnicos.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+    }
+
+    // ==================== TÉCNICO ====================
+    async function cargarMisIntervenciones() {
+        const data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}mis-intervenciones?tecnico_id=${currentUser.id}`);
+        const container = document.getElementById('misIntervencionesList');
+        if (!data.length) { container.innerHTML = '<div class="alert alert-info">No hay intervenciones asignadas.</div>'; return; }
+        container.innerHTML = data.map(i => `
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between">
+                    <h5>${i.activo_nombre} - ${i.tipo_mantenimiento}</h5>
+                    <button class="btn btn-sm btn-primary ver-detalle" data-id="${i.id}">Trabajar</button>
+                </div>
+                <p>${i.descripcion || ''} | Plan: ${i.fecha_inicio_plan} a ${i.fecha_fin_plan} | Estado: ${i.estado}</p>
+            </div>
+        `).join('');
+        document.querySelectorAll('.ver-detalle').forEach(btn => btn.onclick = () => verDetalleTecnico(btn.dataset.id));
+    }
+
+    async function verDetalleTecnico(intervId) {
+        try {
+            const data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}detalle-intervencion?id=${intervId}`);
+            let detalle = Array.isArray(data) ? data[0] : data;
+            if (detalle && detalle.detalle) detalle = detalle.detalle;
+            if (!detalle || detalle.error) throw new Error('No se pudo cargar');
+            
+            let sesionActiva = detalle.sesiones ? detalle.sesiones.find(s => s.fin === null) : null;
+            let sesionId = sesionActiva ? sesionActiva.id : null;
+            
+            let html = `<h5>${detalle.activo_nombre || 'Activo'}</h5>
+                        <p><strong>${detalle.tipo_mantenimiento || ''}</strong><br>
+                        Plan: ${detalle.fecha_inicio_plan ? new Date(detalle.fecha_inicio_plan).toLocaleDateString() : 'N/A'} a ${detalle.fecha_fin_plan ? new Date(detalle.fecha_fin_plan).toLocaleDateString() : 'N/A'}<br>
+                        Descripción: ${detalle.descripcion || 'Sin descripción'}</p>`;
+            
+            if (sesionActiva) {
+                html += `<div class="alert alert-info">Sesión activa desde ${new Date(sesionActiva.inicio).toLocaleString()}</div>`;
+                html += `
+                    <div class="row">
+                        <div class="col-md-6"><label>Tipo de foto</label><select id="tipoFoto" class="form-select"><option value="antes">Antes</option><option value="durante">Durante</option><option value="despues">Después</option></select></div>
+                        <div class="col-md-6"><button id="openCameraBtn" class="btn btn-primary w-100">Abrir cámara</button></div>
+                    </div>
+                    <div id="fotoPreview" class="mt-2"></div>
+                    <hr>
+                    <label>Cantidad realizada</label><input type="number" id="cantidadRealizada" class="form-control">
+                    <label>Comentario</label><textarea id="comentarioCierre" class="form-control"></textarea>
+                    <button class="btn btn-success mt-2" id="cerrarSesionBtn">Cerrar jornada</button>
+                `;
+            } else {
+                html += `<button class="btn btn-primary" id="iniciarSesionBtn">Iniciar jornada</button>`;
+            }
+            html += `<hr><h6>Fotos registradas</h6><div id="fotosPrevias" class="d-flex flex-wrap"></div>`;
+            document.getElementById('detalleIntervBody').innerHTML = html;
+            const modal = new bootstrap.Modal(document.getElementById('modalDetalleIntervencion'));
+            modal.show();
+
+            // Cargar fotos existentes
+            if (detalle.sesiones) {
+                const fotosDiv = document.getElementById('fotosPrevias');
+                for (let ses of detalle.sesiones) {
+                    try {
+                        const fotos = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-fotos?sesion_id=${ses.id}`);
+                        if (fotos.length) {
+                            fotos.forEach(f => {
+                                fotosDiv.innerHTML += `<img src="${f.url}" class="foto-preview" title="${f.tipo_foto} - ${new Date(f.subida_en).toLocaleString()}" onclick="window.open('${f.url}')">`;
+                            });
+                        }
+                    } catch(e) {}
+                }
+            }
+
+            if (!sesionActiva) {
+                document.getElementById('iniciarSesionBtn').onclick = async () => {
+                    await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}iniciar-sesion`, { method: 'POST', body: JSON.stringify({ intervencion_id: intervId, tecnico_id: currentUser.id }) });
+                    modal.hide();
+                    cargarMisIntervenciones();
+                    showNotification('Sesión iniciada');
+                };
+            } else {
+                currentSesionId = sesionId;
+                document.getElementById('openCameraBtn').onclick = () => abrirCamara();
+                document.getElementById('cerrarSesionBtn').onclick = async () => {
+                    const cantidad = document.getElementById('cantidadRealizada').value;
+                    const comentario = document.getElementById('comentarioCierre').value;
+                    await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}cerrar-sesion`, { method: 'POST', body: JSON.stringify({ sesion_id: sesionId, cantidad_realizada: cantidad, comentario }) });
+                    modal.hide();
+                    cargarMisIntervenciones();
+                    showNotification('Sesión cerrada');
+                };
+            }
+        } catch (err) {
+            showNotification('Error al cargar detalle', 'error');
+        }
+    }
+
+    // ==================== CÁMARA ====================
+    async function abrirCamara() {
+        const modalCamera = new bootstrap.Modal(document.getElementById('modalCamera'));
+        const video = document.getElementById('cameraVideo');
+        const canvas = document.getElementById('cameraCanvas');
+        const zoomSlider = document.getElementById('zoomSlider');
+        const btnTake = document.getElementById('btnTakePhoto');
+        const btnRetake = document.getElementById('btnRetakePhoto');
+        const btnAccept = document.getElementById('btnAcceptPhoto');
+        const previewDiv = document.getElementById('fotoPreview');
+        
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+        }
+        
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            currentStream = stream;
+            video.srcObject = stream;
+            await video.play();
+            video.style.transform = `scale(${currentZoom})`;
+            modalCamera.show();
+        } catch (err) {
+            showNotification('No se pudo acceder a la cámara', 'error');
+            return;
+        }
+        
+        zoomSlider.oninput = (e) => {
+            currentZoom = parseFloat(e.target.value);
+            video.style.transform = `scale(${currentZoom})`;
+        };
+        
+        btnTake.onclick = () => {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            photoData = canvas.toDataURL('image/jpeg', 0.8);
+            previewDiv.innerHTML = `<img src="${photoData}" style="max-width:100%; border-radius:8px;">`;
+            btnTake.style.display = 'none';
+            btnRetake.style.display = 'inline-block';
+            btnAccept.style.display = 'inline-block';
+        };
+        
+        btnRetake.onclick = () => {
+            photoData = null;
+            previewDiv.innerHTML = '';
+            btnTake.style.display = 'inline-block';
+            btnRetake.style.display = 'none';
+            btnAccept.style.display = 'none';
+        };
+        
+        btnAccept.onclick = async () => {
+            if (!photoData) return;
+            const tipoFoto = document.getElementById('tipoFoto').value;
+            try {
+                await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}subir-foto`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        sesion_id: currentSesionId,
+                        tipo_foto: tipoFoto,
+                        foto_base64: photoData,
+                        tecnico_id: currentUser.id
+                    })
+                });
+                showNotification('Foto subida correctamente');
+                modalCamera.hide();
+                // Recargar el detalle para mostrar la nueva foto
+                document.getElementById('modalDetalleIntervencion').querySelector('.btn-close').click();
+                // Volver a abrir el detalle (recargar)
+                const detalleModal = new bootstrap.Modal(document.getElementById('modalDetalleIntervencion'));
+                detalleModal.show();
+                cargarMisIntervenciones(); // para refrescar la lista
+            } catch (err) {
+                showNotification('Error al subir foto', 'error');
+            } finally {
+                if (currentStream) {
+                    currentStream.getTracks().forEach(track => track.stop());
+                    currentStream = null;
+                }
+                btnTake.style.display = 'inline-block';
+                btnRetake.style.display = 'none';
+                btnAccept.style.display = 'none';
+                photoData = null;
+                previewDiv.innerHTML = '';
+            }
+        };
+        
+        document.getElementById('modalCamera').addEventListener('hidden.bs.modal', () => {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+        });
     }
 
     // ==================== BOTONES GUARDAR ====================
