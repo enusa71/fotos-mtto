@@ -355,4 +355,268 @@
                 await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}cerrar-sesion`, { method: 'POST', body: JSON.stringify({ sesion_id: sesionId, cantidad_realizada: cantidad, comentario }) });
                 modal.hide();
                 cargarMisIntervenciones();
-                showNotification('
+                showNotification('Sesión cerrada correctamente');
+            };
+        }
+    }
+
+    // ==================== ADMIN / SUPERVISOR (CRUD) ====================
+    async function cargarUsuarios() {
+        let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-usuarios`);
+        if (!Array.isArray(data)) data = [data];
+        const tbody = document.getElementById('usuariosTableBody');
+        tbody.innerHTML = data.map(u => `
+            <tr>
+                <td>${u.id}</td>
+                <td>${u.usuario}</td>
+                <td>${u.nombre}</td>
+                <td>${u.rol}</td>
+                <td>${u.activo ? 'Sí' : 'No'}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning editar-usuario" data-id="${u.id}">Editar</button>
+                    <button class="btn btn-sm btn-danger eliminar-usuario" data-id="${u.id}">Eliminar</button>
+                </td>
+            </tr>
+        `).join('');
+        document.querySelectorAll('.editar-usuario').forEach(btn => btn.onclick = () => editarUsuario(btn.dataset.id));
+        document.querySelectorAll('.eliminar-usuario').forEach(btn => btn.onclick = () => eliminarUsuario(btn.dataset.id));
+    }
+
+    async function editarUsuario(id) {
+        const users = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-usuarios`);
+        const user = users.find(u => u.id == id);
+        if (user) {
+            document.getElementById('usuarioId').value = user.id;
+            document.getElementById('usuarioUsername').value = user.usuario;
+            document.getElementById('usuarioNombre').value = user.nombre;
+            document.getElementById('usuarioRol').value = user.rol;
+            document.getElementById('usuarioActivo').checked = user.activo;
+            document.getElementById('usuarioPassword').value = '';
+            new bootstrap.Modal(document.getElementById('modalUsuario')).show();
+        }
+    }
+
+    async function eliminarUsuario(id) {
+        if (!(await showConfirm('¿Eliminar este usuario? Esta acción no se puede deshacer.'))) return;
+        await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}eliminar-usuario`, { method: 'DELETE', body: JSON.stringify({ id, admin_id: currentUser.id }) });
+        showNotification('Usuario eliminado');
+        cargarUsuarios();
+    }
+
+    async function cargarActivos() {
+        let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-activos`);
+        if (!Array.isArray(data)) data = [data];
+        const tbody = document.getElementById('activosTableBody');
+        tbody.innerHTML = data.map(a => `
+            <tr>
+                <td>${a.id}</td>
+                <td>${a.codigo}</td>
+                <td>${a.nombre}</td>
+                <td>${a.tipo}</td>
+                <td>${a.ubicacion || ''}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning editar-activo" data-id="${a.id}">Editar</button>
+                    <button class="btn btn-sm btn-danger eliminar-activo" data-id="${a.id}">Eliminar</button>
+                </td>
+            </tr>
+        `).join('');
+        document.querySelectorAll('.editar-activo').forEach(btn => btn.onclick = () => editarActivo(btn.dataset.id));
+        document.querySelectorAll('.eliminar-activo').forEach(btn => btn.onclick = () => eliminarActivo(btn.dataset.id));
+    }
+
+    async function editarActivo(id) {
+        const activos = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-activos`);
+        const activo = activos.find(a => a.id == id);
+        if (activo) {
+            document.getElementById('activoId').value = activo.id;
+            document.getElementById('activoCodigo').value = activo.codigo;
+            document.getElementById('activoNombre').value = activo.nombre;
+            document.getElementById('activoTipo').value = activo.tipo;
+            document.getElementById('activoUbicacion').value = activo.ubicacion || '';
+            new bootstrap.Modal(document.getElementById('modalActivo')).show();
+        }
+    }
+
+    async function eliminarActivo(id) {
+        if (!(await showConfirm('¿Eliminar este activo? Se perderán intervenciones asociadas.'))) return;
+        await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}eliminar-activo`, { method: 'DELETE', body: JSON.stringify({ id, creado_por: currentUser.id }) });
+        showNotification('Activo eliminado');
+        cargarActivos();
+        cargarSelectActivos();
+        cargarSelects();
+    }
+
+    async function cargarIntervenciones() {
+        let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-intervenciones`);
+        if (!Array.isArray(data)) data = [data];
+        const tbody = document.getElementById('intervencionesTableBody');
+        tbody.innerHTML = data.map(i => `
+            <tr>
+                <td>${i.id}</td>
+                <td>${i.activo_nombre}</td>
+                <td>${i.tipo_mantenimiento}</td>
+                <td>${i.fecha_inicio_plan} a ${i.fecha_fin_plan}</td>
+                <td>${i.estado}</td>
+                <td>
+                    <button class="btn btn-sm btn-info ver-detalle-intervencion" data-id="${i.id}">Ver</button>
+                    <button class="btn btn-sm btn-warning editar-intervencion" data-id="${i.id}">Editar</button>
+                    <button class="btn btn-sm btn-danger eliminar-intervencion" data-id="${i.id}">Eliminar</button>
+                </td>
+            </tr>
+        `).join('');
+        document.querySelectorAll('.ver-detalle-intervencion').forEach(btn => btn.onclick = () => verDetalleAdmin(btn.dataset.id));
+        document.querySelectorAll('.editar-intervencion').forEach(btn => btn.onclick = () => editarIntervencion(btn.dataset.id));
+        document.querySelectorAll('.eliminar-intervencion').forEach(btn => btn.onclick = () => eliminarIntervencion(btn.dataset.id));
+    }
+
+    async function verDetalleAdmin(id) {
+        const detalle = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}detalle-intervencion?id=${id}`);
+        let html = `<h5>${detalle.activo_nombre}</h5><p>${detalle.descripcion}<br>Fechas plan: ${detalle.fecha_inicio_plan} a ${detalle.fecha_fin_plan}<br>Estado: ${detalle.estado}<br>Real: ${detalle.fecha_inicio_real || 'N/A'} a ${detalle.fecha_fin_real || 'N/A'}</p>`;
+        html += `<h6>Sesiones</h6><ul>`;
+        if (detalle.sesiones && detalle.sesiones.length) {
+            detalle.sesiones.forEach(s => {
+                html += `<li>${new Date(s.inicio).toLocaleString()} - ${s.fin ? new Date(s.fin).toLocaleString() : 'Activa'} | Cantidad: ${s.cantidad_realizada || 0} | Técnico: ${s.tecnico_nombre}</li>`;
+            });
+        } else html += `<li>No hay sesiones</li>`;
+        html += `</ul>`;
+        document.getElementById('detalleIntervBody').innerHTML = html;
+        new bootstrap.Modal(document.getElementById('modalDetalleIntervencion')).show();
+    }
+
+    async function editarIntervencion(id) {
+        const detalle = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}detalle-intervencion?id=${id}`);
+        document.getElementById('intervId').value = detalle.id;
+        document.getElementById('intervActivoId').value = detalle.activo_id;
+        document.getElementById('intervTipo').value = detalle.tipo_mantenimiento;
+        document.getElementById('intervDescripcion').value = detalle.descripcion || '';
+        document.getElementById('intervFechaInicioPlan').value = detalle.fecha_inicio_plan;
+        document.getElementById('intervFechaFinPlan').value = detalle.fecha_fin_plan;
+        document.getElementById('intervExpediente').value = detalle.expediente_ministerio || '';
+        const users = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-usuarios`);
+        const tecnicos = users.filter(u => u.rol === 'tecnico');
+        const selectTecnico = document.getElementById('intervTecnicoId');
+        selectTecnico.innerHTML = tecnicos.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+        // Obtener técnico asignado actual (simplificado, asumimos que hay uno)
+        const tecnicosAsignados = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-tecnicos-por-intervencion?id=${detalle.id}`).catch(() => []);
+        if (tecnicosAsignados.length) selectTecnico.value = tecnicosAsignados[0].tecnico_id;
+        new bootstrap.Modal(document.getElementById('modalIntervencion')).show();
+    }
+
+    async function eliminarIntervencion(id) {
+        if (!(await showConfirm('¿Eliminar esta intervención? Se perderán sesiones y fotos.'))) return;
+        await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}eliminar-intervencion`, { method: 'DELETE', body: JSON.stringify({ id, creado_por: currentUser.id }) });
+        showNotification('Intervención eliminada');
+        cargarIntervenciones();
+        cargarReporteAvance();
+    }
+
+    async function cargarReporteAvance() {
+        try {
+            let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}reporte-avance`);
+            if (!Array.isArray(data)) data = [data];
+            const tbody = document.getElementById('reporteTableBody');
+            tbody.innerHTML = data.map(r => `
+                <tr>
+                    <td>${r.activo || ''}</td>
+                    <td>${r.tipo_mantenimiento || ''}</td>
+                    <td>${r.fecha_inicio_plan ? new Date(r.fecha_inicio_plan).toLocaleDateString() : 'N/A'} a ${r.fecha_fin_plan ? new Date(r.fecha_fin_plan).toLocaleDateString() : 'N/A'}</td>
+                    <td>${r.fecha_inicio_real ? new Date(r.fecha_inicio_real).toLocaleDateString() : 'N/A'} a ${r.fecha_fin_real ? new Date(r.fecha_fin_real).toLocaleDateString() : 'N/A'}</td>
+                    <td>${r.estado || ''}</td>
+                    <td>${r.fotos_antes || 0} / ${r.fotos_despues || 0}</td>
+                </tr>
+            `).join('');
+        } catch (err) {
+            console.error('Error cargando reporte:', err);
+        }
+    }
+
+    async function cargarSelectActivos() {
+        const data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-activos`);
+        const select = document.getElementById('selectActivo');
+        select.innerHTML = '<option value="">Seleccione...</option>' + data.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
+        document.getElementById('btnVerHojaVida').onclick = async () => {
+            const activoId = select.value;
+            if (!activoId) return showNotification('Seleccione un activo', 'warning');
+            const hv = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}hoja-vida-activo?activo_id=${activoId}`);
+            document.getElementById('hojaVidaResultado').innerHTML = `<pre>${JSON.stringify(hv, null, 2)}</pre>`;
+        };
+    }
+
+    async function cargarSelects() {
+        const activos = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-activos`);
+        const selectActivo = document.getElementById('intervActivoId');
+        selectActivo.innerHTML = activos.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
+        const users = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-usuarios`);
+        const tecnicos = users.filter(u => u.rol === 'tecnico');
+        const selectTecnico = document.getElementById('intervTecnicoId');
+        selectTecnico.innerHTML = tecnicos.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+    }
+
+    // ==================== BOTONES GUARDAR ====================
+    document.getElementById('guardarUsuarioBtn').onclick = async () => {
+        const id = document.getElementById('usuarioId').value;
+        const usuario = document.getElementById('usuarioUsername').value;
+        const nombre = document.getElementById('usuarioNombre').value;
+        const password = document.getElementById('usuarioPassword').value;
+        const rol = document.getElementById('usuarioRol').value;
+        const activo = document.getElementById('usuarioActivo').checked;
+        if (!usuario || !nombre) return showNotification('Usuario y nombre son obligatorios', 'warning');
+        const data = { admin_id: currentUser.id, usuario, nombre, rol, activo };
+        if (password) data.password = password;
+        if (id) data.id = id;
+        const url = id ? `${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}actualizar-usuario` : `${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}crear-usuario`;
+        await apiCall(url, { method: 'POST', body: JSON.stringify(data) });
+        showNotification('Usuario guardado');
+        bootstrap.Modal.getInstance(document.getElementById('modalUsuario')).hide();
+        cargarUsuarios();
+    };
+
+    document.getElementById('guardarActivoBtn').onclick = async () => {
+        const id = document.getElementById('activoId').value;
+        const data = {
+            codigo: document.getElementById('activoCodigo').value,
+            nombre: document.getElementById('activoNombre').value,
+            tipo: document.getElementById('activoTipo').value,
+            ubicacion: document.getElementById('activoUbicacion').value,
+            creado_por: currentUser.id
+        };
+        if (id) data.id = id;
+        const url = id ? `${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}actualizar-activo` : `${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}crear-activo`;
+        await apiCall(url, { method: 'POST', body: JSON.stringify(data) });
+        showNotification('Activo guardado');
+        bootstrap.Modal.getInstance(document.getElementById('modalActivo')).hide();
+        cargarActivos();
+        cargarSelectActivos();
+        cargarSelects();
+    };
+
+    document.getElementById('guardarIntervencionBtn').onclick = async () => {
+        const id = document.getElementById('intervId').value;
+        const data = {
+            activo_id: document.getElementById('intervActivoId').value,
+            tipo_mantenimiento: document.getElementById('intervTipo').value,
+            descripcion: document.getElementById('intervDescripcion').value,
+            fecha_inicio_plan: document.getElementById('intervFechaInicioPlan').value,
+            fecha_fin_plan: document.getElementById('intervFechaFinPlan').value,
+            expediente: document.getElementById('intervExpediente').value,
+            creado_por: currentUser.id,
+            tecnico_id: document.getElementById('intervTecnicoId').value
+        };
+        if (id) data.id = id;
+        const url = id ? `${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}actualizar-intervencion` : `${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}crear-intervencion`;
+        await apiCall(url, { method: 'POST', body: JSON.stringify(data) });
+        showNotification('Intervención guardada');
+        bootstrap.Modal.getInstance(document.getElementById('modalIntervencion')).hide();
+        cargarIntervenciones();
+        cargarReporteAvance();
+    };
+
+    // Inicialización
+    (function init() {
+        const stored = localStorage.getItem('currentUser');
+        if (stored) { currentUser = JSON.parse(stored); showDashboard(); }
+        cargarSelects();
+    })();
+</script>
+</body>
+</html>
