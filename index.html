@@ -112,67 +112,10 @@
     </div>
 </div>
 
-<!-- Modal Usuario -->
-<div class="modal fade" id="modalUsuario" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header"><h5>Usuario</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body">
-                <form><input type="hidden" id="usuarioId">
-                    <div class="mb-2"><label>Usuario</label><input type="text" id="usuarioUsername" class="form-control" required></div>
-                    <div class="mb-2"><label>Nombre</label><input type="text" id="usuarioNombre" class="form-control" required></div>
-                    <div class="mb-2"><label>Contraseña</label><input type="password" id="usuarioPassword" class="form-control" placeholder="Dejar en blanco para mantener"></div>
-                    <div class="mb-2"><label>Rol</label><select id="usuarioRol" class="form-select"><option value="tecnico">Técnico</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option></select></div>
-                    <div class="form-check"><input type="checkbox" id="usuarioActivo" class="form-check-input" checked> <label class="form-check-label">Activo</label></div>
-                </form>
-            </div>
-            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" id="guardarUsuarioBtn">Guardar</button></div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Activo -->
-<div class="modal fade" id="modalActivo" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header"><h5>Activo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body">
-                <form><input type="hidden" id="activoId">
-                    <div class="mb-2"><label>Código</label><input type="text" id="activoCodigo" class="form-control" required></div>
-                    <div class="mb-2"><label>Nombre</label><input type="text" id="activoNombre" class="form-control" required></div>
-                    <div class="mb-2"><label>Tipo</label><input type="text" id="activoTipo" class="form-control" required></div>
-                    <div class="mb-2"><label>Ubicación</label><input type="text" id="activoUbicacion" class="form-control"></div>
-                </form>
-            </div>
-            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" id="guardarActivoBtn">Guardar</button></div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Intervención -->
-<div class="modal fade" id="modalIntervencion" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header"><h5>Intervención</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body">
-                <form><input type="hidden" id="intervId">
-                    <div class="row">
-                        <div class="col-md-6"><label>Activo</label><select id="intervActivoId" class="form-select" required></select></div>
-                        <div class="col-md-6"><label>Tipo Mantenimiento</label><select id="intervTipo" class="form-select"><option value="preventivo">Preventivo</option><option value="correctivo">Correctivo</option><option value="construccion">Construcción</option></select></div>
-                    </div>
-                    <div class="mt-2"><label>Descripción</label><textarea id="intervDescripcion" class="form-control" rows="2"></textarea></div>
-                    <div class="row mt-2">
-                        <div class="col-md-6"><label>Fecha inicio plan</label><input type="date" id="intervFechaInicioPlan" class="form-control" required></div>
-                        <div class="col-md-6"><label>Fecha fin plan</label><input type="date" id="intervFechaFinPlan" class="form-control" required></div>
-                    </div>
-                    <div class="mt-2"><label>Expediente Ministerio</label><input type="text" id="intervExpediente" class="form-control"></div>
-                    <div class="mt-2"><label>Técnico Asignado</label><select id="intervTecnicoId" class="form-select"></select></div>
-                </form>
-            </div>
-            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" id="guardarIntervencionBtn">Guardar</button></div>
-        </div>
-    </div>
-</div>
+<!-- Modales CRUD -->
+<div class="modal fade" id="modalUsuario" tabindex="-1">...</div>
+<div class="modal fade" id="modalActivo" tabindex="-1">...</div>
+<div class="modal fade" id="modalIntervencion" tabindex="-1">...</div>
 
 <!-- Modal Detalle Intervención (técnico) -->
 <div class="modal fade" id="modalDetalleIntervencion" tabindex="-1" data-bs-backdrop="static">
@@ -577,8 +520,12 @@
                         body: JSON.stringify({ intervencion_id: intervId, tecnico_id: currentUser.id })
                     });
                     showNotification('Sesión iniciada');
-                    // Recargar el detalle para mostrar la sesión activa sin cerrar el modal
-                    await verDetalleTecnico(intervId);
+                    modal.hide(); // cerrar modal actual
+                    // Esperar un momento y volver a abrir con los datos actualizados
+                    setTimeout(async () => {
+                        await verDetalleTecnico(intervId);
+                        new bootstrap.Modal(document.getElementById('modalDetalleIntervencion')).show();
+                    }, 100);
                 };
             } else {
                 currentSesionId = sesionId;
@@ -668,11 +615,12 @@
                 showNotification('Foto subida correctamente');
                 modalCamera.hide();
                 // Recargar el detalle para mostrar la nueva foto
-                const detalleModal = new bootstrap.Modal(document.getElementById('modalDetalleIntervencion'));
-                detalleModal.show();
-                // Volver a cargar el detalle para actualizar la lista de fotos
                 const intervId = document.querySelector('.ver-detalle')?.dataset.id;
-                if (intervId) await verDetalleTecnico(intervId);
+                if (intervId) {
+                    const detalleModal = new bootstrap.Modal(document.getElementById('modalDetalleIntervencion'));
+                    detalleModal.show();
+                    await verDetalleTecnico(intervId);
+                }
                 cargarMisIntervenciones();
             } catch (err) {
                 showNotification('Error al subir foto', 'error');
