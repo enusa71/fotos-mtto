@@ -104,7 +104,7 @@
 
     <div class="tab-content mt-3">
         <div class="tab-pane fade" id="misIntervenciones"><div class="card p-3"><h4>Mis Intervenciones Asignadas</h4><div id="misIntervencionesList" class="list-group"></div></div></div>
-        <div class="tab-pane fade" id="usuarios"><div class="card p-3"><h4>Gestión de Usuarios</h4><button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalUsuario">+ Nuevo Usuario</button><div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Activo</th><th>Acciones</th></td></thead><tbody id="usuariosTableBody"></tbody></table></div></div></div>
+        <div class="tab-pane fade" id="usuarios"><div class="card p-3"><h4>Gestión de Usuarios</h4><button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalUsuario">+ Nuevo Usuario</button><div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Activo</th><th>Acciones</th></tr></thead><tbody id="usuariosTableBody"></tbody></table></div></div></div>
         <div class="tab-pane fade" id="activos"><div class="card p-3"><h4>Gestión de Activos</h4><button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalActivo">+ Nuevo Activo</button><div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Tipo</th><th>Ubicación</th><th>Acciones</th></td></thead><tbody id="activosTableBody"></tbody></table></div></div></div>
         <div class="tab-pane fade" id="intervenciones"><div class="card p-3"><h4>Intervenciones</h4><button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalIntervencion">+ Nueva Intervención</button><div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Activo</th><th>Tipo</th><th>Fechas plan</th><th>Estado</th><th>Acciones</th></td></thead><tbody id="intervencionesTableBody"></tbody></table></div></div></div>
         <div class="tab-pane fade" id="reporte"><div class="card p-3"><h4>Reporte de Avance</h4><div class="table-responsive"><table class="table table-bordered"><thead><tr><th>Activo</th><th>Tipo</th><th>Fechas plan</th><th>Fechas real</th><th>Estado</th><th>Fotos (A/D)</th></tr></thead><tbody id="reporteTableBody"></tbody></table></div></div></div>
@@ -112,7 +112,7 @@
     </div>
 </div>
 
-<!-- Modales CRUD (contenido completo, omitido por brevedad pero debes mantener el contenido real) -->
+<!-- Modales CRUD (contenido completo, igual que antes - por brevedad se omiten aquí pero debes mantenerlos) -->
 <div class="modal fade" id="modalUsuario" tabindex="-1">...</div>
 <div class="modal fade" id="modalActivo" tabindex="-1">...</div>
 <div class="modal fade" id="modalIntervencion" tabindex="-1">...</div>
@@ -163,7 +163,6 @@
     let photoData = null;
     let currentSesionId = null;
     let currentIntervId = null;
-    let currentModal = null; // para mantener referencia al modal
 
     // Notificaciones
     function showNotification(msg, type = 'success') {
@@ -258,7 +257,7 @@
     document.getElementById('logoutBtn').onclick = () => { localStorage.clear(); location.reload(); };
 
     // ==================== ADMIN / SUPERVISOR (CRUD) ====================
-    // (Las funciones CRUD se mantienen igual que en versiones anteriores, omito por brevedad pero deben estar completas)
+    // (Estas funciones deben estar completas; aquí van solo las cabeceras para que el código sea funcional. Usa las que ya tenías)
     async function cargarUsuarios() { /* ... */ }
     async function editarUsuario(id) { /* ... */ }
     async function eliminarUsuario(id) { /* ... */ }
@@ -290,8 +289,8 @@
         document.querySelectorAll('.ver-detalle').forEach(btn => btn.onclick = () => verDetalleTecnico(btn.dataset.id));
     }
 
-    // Función para renderizar el detalle (sin recursividad)
-    async function renderDetalle(intervId) {
+    async function verDetalleTecnico(intervId) {
+        currentIntervId = intervId;
         try {
             const data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}detalle-intervencion?id=${intervId}`);
             let detalle = Array.isArray(data) ? data[0] : data;
@@ -324,10 +323,7 @@
                 html += `<button class="btn btn-primary" id="iniciarSesionBtn">Iniciar jornada</button>`;
             }
             html += `<hr><h6>Fotos registradas</h6><div id="fotosPrevias" class="d-flex flex-wrap"></div>`;
-            
-            // Actualizar el contenido del modal
-            const modalBody = document.getElementById('detalleIntervBody');
-            modalBody.innerHTML = html;
+            document.getElementById('detalleIntervBody').innerHTML = html;
             
             // Cargar fotos existentes
             if (detalle.sesiones) {
@@ -345,35 +341,32 @@
                 }
             }
             
-            // Asignar eventos después de actualizar el DOM
+            // Asignar eventos
             if (!sesionActiva) {
                 const btnIniciar = document.getElementById('iniciarSesionBtn');
                 if (btnIniciar) {
-                    // Remover eventos anteriores para evitar duplicados
-                    const newBtn = btnIniciar.cloneNode(true);
-                    btnIniciar.parentNode.replaceChild(newBtn, btnIniciar);
-                    newBtn.onclick = async () => {
+                    btnIniciar.onclick = async () => {
                         await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}iniciar-sesion`, {
                             method: 'POST',
                             body: JSON.stringify({ intervencion_id: intervId, tecnico_id: currentUser.id })
                         });
                         showNotification('Sesión iniciada');
-                        // Volver a renderizar el detalle con la sesión activa
-                        await renderDetalle(intervId);
+                        // Cerrar el modal actual y volver a abrirlo con la misma intervención
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('modalDetalleIntervencion'));
+                        modal.hide();
+                        // Esperar a que se cierre y luego volver a abrir
+                        setTimeout(() => {
+                            verDetalleTecnico(intervId);
+                            new bootstrap.Modal(document.getElementById('modalDetalleIntervencion')).show();
+                        }, 300);
                     };
                 }
             } else {
                 const btnCamera = document.getElementById('openCameraBtn');
-                if (btnCamera) {
-                    const newCam = btnCamera.cloneNode(true);
-                    btnCamera.parentNode.replaceChild(newCam, btnCamera);
-                    newCam.onclick = () => abrirCamara();
-                }
+                if (btnCamera) btnCamera.onclick = () => abrirCamara();
                 const btnCerrar = document.getElementById('cerrarSesionBtn');
                 if (btnCerrar) {
-                    const newCerrar = btnCerrar.cloneNode(true);
-                    btnCerrar.parentNode.replaceChild(newCerrar, btnCerrar);
-                    newCerrar.onclick = async () => {
+                    btnCerrar.onclick = async () => {
                         const cantidad = document.getElementById('cantidadRealizada').value;
                         const comentario = document.getElementById('comentarioCierre').value;
                         await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}cerrar-sesion`, {
@@ -381,25 +374,22 @@
                             body: JSON.stringify({ sesion_id: sesionId, cantidad_realizada: cantidad, comentario })
                         });
                         showNotification('Sesión cerrada');
-                        // Cerrar el modal y recargar la lista
-                        if (currentModal) currentModal.hide();
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('modalDetalleIntervencion'));
+                        modal.hide();
                         cargarMisIntervenciones();
                     };
                 }
             }
+            
+            // Mostrar modal si no está visible
+            const modalElement = document.getElementById('modalDetalleIntervencion');
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (!modal || !modalElement.classList.contains('show')) {
+                new bootstrap.Modal(modalElement).show();
+            }
         } catch (err) {
             showNotification('Error al cargar detalle', 'error');
         }
-    }
-
-    async function verDetalleTecnico(intervId) {
-        currentIntervId = intervId;
-        // Mostrar el modal (puede estar oculto)
-        if (!currentModal) {
-            currentModal = new bootstrap.Modal(document.getElementById('modalDetalleIntervencion'));
-        }
-        currentModal.show();
-        await renderDetalle(intervId);
     }
 
     // ==================== CÁMARA ====================
@@ -470,8 +460,9 @@
                 showNotification('Foto subida correctamente');
                 modalCamera.hide();
                 // Recargar el detalle para mostrar la nueva foto
-                await renderDetalle(currentIntervId);
-                cargarMisIntervenciones(); // actualizar lista
+                const intervId = currentIntervId;
+                await verDetalleTecnico(intervId);
+                cargarMisIntervenciones();
             } catch (err) {
                 showNotification('Error al subir foto', 'error');
             } finally {
