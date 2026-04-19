@@ -112,7 +112,7 @@
     </div>
 </div>
 
-<!-- Modal Usuario -->
+<!-- Modales CRUD -->
 <div class="modal fade" id="modalUsuario" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -131,7 +131,6 @@
     </div>
 </div>
 
-<!-- Modal Activo -->
 <div class="modal fade" id="modalActivo" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -149,7 +148,6 @@
     </div>
 </div>
 
-<!-- Modal Intervención -->
 <div class="modal fade" id="modalIntervencion" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -220,6 +218,7 @@
     let photoData = null;
     let currentSesionId = null;
     let currentIntervId = null;
+    let updating = false; // para evitar múltiples actualizaciones
 
     // Notificaciones
     function showNotification(msg, type = 'success') {
@@ -317,7 +316,7 @@
     async function cargarUsuarios() {
         let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-usuarios`);
         const tbody = document.getElementById('usuariosTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay usuarios</td></tr>'; return; }
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay usuarios</td></table>'; return; }
         tbody.innerHTML = data.map(u => `
             <tr>
                 <td>${u.id}</td>
@@ -402,7 +401,7 @@
     async function cargarIntervenciones() {
         let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-intervenciones`);
         const tbody = document.getElementById('intervencionesTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay intervenciones</td></tr>'; return; }
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay intervenciones</td></td>'; return; }
         tbody.innerHTML = data.map(i => `
             <tr>
                 <td>${i.id}</td>
@@ -453,8 +452,6 @@
         const tecnicos = users.filter(u => u.rol === 'tecnico');
         const selectTecnico = document.getElementById('intervTecnicoId');
         selectTecnico.innerHTML = tecnicos.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
-        // Si el detalle tiene algún técnico asignado (podría venir de otra tabla)
-        if (d.tecnico_id) selectTecnico.value = d.tecnico_id;
         new bootstrap.Modal(document.getElementById('modalIntervencion')).show();
     }
 
@@ -469,7 +466,7 @@
     async function cargarReporteAvance() {
         let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}reporte-avance`);
         const tbody = document.getElementById('reporteTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay datos</td></tr>'; return; }
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay datos</td></table>'; return; }
         tbody.innerHTML = data.map(r => `
             <tr>
                 <td>${r.activo || ''}</td>
@@ -522,6 +519,8 @@
     }
 
     async function verDetalleTecnico(intervId) {
+        if (updating) return;
+        updating = true;
         currentIntervId = intervId;
         try {
             const data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}detalle-intervencion?id=${intervId}`);
@@ -532,6 +531,7 @@
             let sesionActiva = detalle.sesiones ? detalle.sesiones.find(s => s.fin === null) : null;
             let sesionId = sesionActiva ? sesionActiva.id : null;
             currentSesionId = sesionId;
+            console.log('Sesión activa?', sesionActiva, 'ID:', sesionId);
             
             let html = `<h5>${detalle.activo_nombre || 'Activo'}</h5>
                         <p><strong>${detalle.tipo_mantenimiento || ''}</strong><br>
@@ -573,32 +573,35 @@
                 }
             }
             
-            // Asignar eventos
+            // Asignar eventos (evitar duplicados clonando botones)
             if (!sesionActiva) {
                 const btnIniciar = document.getElementById('iniciarSesionBtn');
                 if (btnIniciar) {
-                    btnIniciar.onclick = async () => {
+                    const newBtn = btnIniciar.cloneNode(true);
+                    btnIniciar.parentNode.replaceChild(newBtn, btnIniciar);
+                    newBtn.onclick = async () => {
+                        if (updating) return;
                         await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}iniciar-sesion`, {
                             method: 'POST',
                             body: JSON.stringify({ intervencion_id: intervId, tecnico_id: currentUser.id })
                         });
                         showNotification('Sesión iniciada');
-                        // Cerrar y volver a abrir el modal para recargar datos
-                        const modalElem = document.getElementById('modalDetalleIntervencion');
-                        const modal = bootstrap.Modal.getInstance(modalElem);
-                        if (modal) modal.hide();
-                        setTimeout(async () => {
-                            await verDetalleTecnico(intervId);
-                            new bootstrap.Modal(modalElem).show();
-                        }, 300);
+                        // Recargar el detalle (actualizar el modal sin cerrarlo)
+                        await verDetalleTecnico(intervId);
                     };
                 }
             } else {
                 const btnCamera = document.getElementById('openCameraBtn');
-                if (btnCamera) btnCamera.onclick = () => abrirCamara();
+                if (btnCamera) {
+                    const newCam = btnCamera.cloneNode(true);
+                    btnCamera.parentNode.replaceChild(newCam, btnCamera);
+                    newCam.onclick = () => abrirCamara();
+                }
                 const btnCerrar = document.getElementById('cerrarSesionBtn');
                 if (btnCerrar) {
-                    btnCerrar.onclick = async () => {
+                    const newCerrar = btnCerrar.cloneNode(true);
+                    btnCerrar.parentNode.replaceChild(newCerrar, btnCerrar);
+                    newCerrar.onclick = async () => {
                         const cantidad = document.getElementById('cantidadRealizada').value;
                         const comentario = document.getElementById('comentarioCierre').value;
                         await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}cerrar-sesion`, {
@@ -622,6 +625,8 @@
             }
         } catch (err) {
             showNotification('Error al cargar detalle', 'error');
+        } finally {
+            updating = false;
         }
     }
 
@@ -692,7 +697,6 @@
                 });
                 showNotification('Foto subida correctamente');
                 modalCamera.hide();
-                // Recargar detalle para mostrar la nueva foto
                 await verDetalleTecnico(currentIntervId);
                 cargarMisIntervenciones();
             } catch (err) {
@@ -718,7 +722,7 @@
         });
     }
 
-    // ==================== BOTONES GUARDAR (CRUD) ====================
+    // ==================== BOTONES GUARDAR ====================
     document.getElementById('guardarUsuarioBtn').onclick = async () => {
         const id = document.getElementById('usuarioId').value;
         const usuario = document.getElementById('usuarioUsername').value;
