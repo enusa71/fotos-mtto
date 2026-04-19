@@ -11,41 +11,14 @@
         .card { border-radius: 20px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .login-container { max-width: 400px; margin: 80px auto; }
         .dashboard { display: none; }
-        .custom-toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #28a745;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 40px;
-            z-index: 10000;
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-            font-weight: 500;
-        }
+        .custom-toast { position: fixed; bottom: 20px; right: 20px; background: #28a745; color: white; padding: 12px 20px; border-radius: 40px; z-index: 10000; opacity: 0; transition: opacity 0.3s; pointer-events: none; font-weight: 500; }
         .custom-toast.error { background: #dc3545; }
         .custom-toast.warning { background: #ffc107; color: #212529; }
         .foto-preview { max-width: 80px; margin: 5px; border-radius: 8px; cursor: pointer; }
         .table-responsive { overflow-x: auto; }
         .btn-sm { margin: 2px; }
-        .loading {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
-            color: white;
-        }
-        @media (max-width: 768px) {
-            .table-responsive { font-size: 0.8rem; }
-        }
+        .loading { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center; color: white; }
+        @media (max-width: 768px) { .table-responsive { font-size: 0.8rem; } }
     </style>
 </head>
 <body>
@@ -97,7 +70,12 @@
             <div class="card p-3">
                 <h4>Gestión de Usuarios</h4>
                 <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalUsuario">+ Nuevo Usuario</button>
-                <div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Activo</th><th>Acciones</th></tr></thead><tbody id="usuariosTableBody"></tbody></table></div>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead><tr><th>ID</th><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Activo</th><th>Acciones</th></tr></thead>
+                        <tbody id="usuariosTableBody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -106,16 +84,26 @@
             <div class="card p-3">
                 <h4>Gestión de Activos</h4>
                 <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalActivo">+ Nuevo Activo</button>
-                <div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Tipo</th><th>Ubicación</th><th>Acciones</th></tr></thead><tbody id="activosTableBody"></tbody></table></div>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Tipo</th><th>Ubicación</th><th>Acciones</th></tr></thead>
+                        <tbody id="activosTableBody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <!-- Intervenciones (admin/supervisor) -->
+        <!-- Intervenciones -->
         <div class="tab-pane fade" id="intervenciones">
             <div class="card p-3">
                 <h4>Intervenciones</h4>
                 <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalIntervencion">+ Nueva Intervención</button>
-                <div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Activo</th><th>Tipo</th><th>Fechas plan</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="intervencionesTableBody"></tbody></table></div>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead><tr><th>ID</th><th>Activo</th><th>Tipo</th><th>Fechas plan</th><th>Estado</th><th>Acciones</th></tr></thead>
+                        <tbody id="intervencionesTableBody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -123,7 +111,12 @@
         <div class="tab-pane fade" id="reporte">
             <div class="card p-3">
                 <h4>Reporte de Avance</h4>
-                <div class="table-responsive"><table class="table table-bordered"><thead><tr><th>Activo</th><th>Tipo</th><th>Fechas plan</th><th>Fechas real</th><th>Estado</th><th>Fotos (A/D)</th></tr></thead><tbody id="reporteTableBody"></tbody></table></div>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead><tr><th>Activo</th><th>Tipo</th><th>Fechas plan</th><th>Fechas real</th><th>Estado</th><th>Fotos (A/D)</th></tr></thead>
+                        <tbody id="reporteTableBody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -131,18 +124,81 @@
         <div class="tab-pane fade" id="hojaVida">
             <div class="card p-3">
                 <h4>Hoja de Vida de Activo</h4>
-                <div class="row"><div class="col-md-4"><select id="selectActivo" class="form-select"></select><button id="btnVerHojaVida" class="btn btn-secondary mt-2 w-100">Consultar</button></div><div class="col-md-8"><div id="hojaVidaResultado"></div></div></div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <select id="selectActivo" class="form-select"></select>
+                        <button id="btnVerHojaVida" class="btn btn-secondary mt-2 w-100">Consultar</button>
+                    </div>
+                    <div class="col-md-8">
+                        <div id="hojaVidaResultado"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modales -->
-<div class="modal fade" id="modalUsuario" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Usuario</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form><input type="hidden" id="usuarioId"><div class="mb-2"><label>Usuario</label><input type="text" id="usuarioUsername" class="form-control" required></div><div class="mb-2"><label>Nombre</label><input type="text" id="usuarioNombre" class="form-control" required></div><div class="mb-2"><label>Contraseña</label><input type="password" id="usuarioPassword" class="form-control" placeholder="Dejar en blanco para mantener"></div><div class="mb-2"><label>Rol</label><select id="usuarioRol" class="form-select"><option value="tecnico">Técnico</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option></select></div><div class="form-check"><input type="checkbox" id="usuarioActivo" class="form-check-input" checked> <label class="form-check-label">Activo</label></div></form></div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" id="guardarUsuarioBtn">Guardar</button></div></div></div></div>
+<!-- Modal Usuario -->
+<div class="modal fade" id="modalUsuario" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Usuario</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form><input type="hidden" id="usuarioId">
+                    <div class="mb-2"><label>Usuario</label><input type="text" id="usuarioUsername" class="form-control" required></div>
+                    <div class="mb-2"><label>Nombre</label><input type="text" id="usuarioNombre" class="form-control" required></div>
+                    <div class="mb-2"><label>Contraseña</label><input type="password" id="usuarioPassword" class="form-control" placeholder="Dejar en blanco para mantener"></div>
+                    <div class="mb-2"><label>Rol</label><select id="usuarioRol" class="form-select"><option value="tecnico">Técnico</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option></select></div>
+                    <div class="form-check"><input type="checkbox" id="usuarioActivo" class="form-check-input" checked> <label class="form-check-label">Activo</label></div>
+                </form>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" id="guardarUsuarioBtn">Guardar</button></div>
+        </div>
+    </div>
+</div>
 
-<div class="modal fade" id="modalActivo" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>Activo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form><input type="hidden" id="activoId"><div class="mb-2"><label>Código</label><input type="text" id="activoCodigo" class="form-control" required></div><div class="mb-2"><label>Nombre</label><input type="text" id="activoNombre" class="form-control" required></div><div class="mb-2"><label>Tipo</label><input type="text" id="activoTipo" class="form-control" required></div><div class="mb-2"><label>Ubicación</label><input type="text" id="activoUbicacion" class="form-control"></div></form></div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" id="guardarActivoBtn">Guardar</button></div></div></div></div>
+<!-- Modal Activo -->
+<div class="modal fade" id="modalActivo" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Activo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form><input type="hidden" id="activoId">
+                    <div class="mb-2"><label>Código</label><input type="text" id="activoCodigo" class="form-control" required></div>
+                    <div class="mb-2"><label>Nombre</label><input type="text" id="activoNombre" class="form-control" required></div>
+                    <div class="mb-2"><label>Tipo</label><input type="text" id="activoTipo" class="form-control" required></div>
+                    <div class="mb-2"><label>Ubicación</label><input type="text" id="activoUbicacion" class="form-control"></div>
+                </form>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" id="guardarActivoBtn">Guardar</button></div>
+        </div>
+    </div>
+</div>
 
-<div class="modal fade" id="modalIntervencion" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5>Intervención</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form><input type="hidden" id="intervId"><div class="row"><div class="col-md-6"><label>Activo</label><select id="intervActivoId" class="form-select" required></select></div><div class="col-md-6"><label>Tipo Mantenimiento</label><select id="intervTipo" class="form-select"><option value="preventivo">Preventivo</option><option value="correctivo">Correctivo</option><option value="construccion">Construcción</option></select></div></div><div class="mt-2"><label>Descripción</label><textarea id="intervDescripcion" class="form-control" rows="2"></textarea></div><div class="row mt-2"><div class="col-md-6"><label>Fecha inicio plan</label><input type="date" id="intervFechaInicioPlan" class="form-control" required></div><div class="col-md-6"><label>Fecha fin plan</label><input type="date" id="intervFechaFinPlan" class="form-control" required></div></div><div class="mt-2"><label>Expediente Ministerio</label><input type="text" id="intervExpediente" class="form-control"></div><div class="mt-2"><label>Técnico Asignado</label><select id="intervTecnicoId" class="form-select"></select></div></form></div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" id="guardarIntervencionBtn">Guardar</button></div></div></div></div>
+<!-- Modal Intervención -->
+<div class="modal fade" id="modalIntervencion" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Intervención</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form><input type="hidden" id="intervId">
+                    <div class="row">
+                        <div class="col-md-6"><label>Activo</label><select id="intervActivoId" class="form-select" required></select></div>
+                        <div class="col-md-6"><label>Tipo Mantenimiento</label><select id="intervTipo" class="form-select"><option value="preventivo">Preventivo</option><option value="correctivo">Correctivo</option><option value="construccion">Construcción</option></select></div>
+                    </div>
+                    <div class="mt-2"><label>Descripción</label><textarea id="intervDescripcion" class="form-control" rows="2"></textarea></div>
+                    <div class="row mt-2">
+                        <div class="col-md-6"><label>Fecha inicio plan</label><input type="date" id="intervFechaInicioPlan" class="form-control" required></div>
+                        <div class="col-md-6"><label>Fecha fin plan</label><input type="date" id="intervFechaFinPlan" class="form-control" required></div>
+                    </div>
+                    <div class="mt-2"><label>Expediente Ministerio</label><input type="text" id="intervExpediente" class="form-control"></div>
+                    <div class="mt-2"><label>Técnico Asignado</label><select id="intervTecnicoId" class="form-select"></select></div>
+                </form>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" id="guardarIntervencionBtn">Guardar</button></div>
+        </div>
+    </div>
+</div>
 
 <!-- Modal Detalle Intervención (técnico) -->
 <div class="modal fade" id="modalDetalleIntervencion" tabindex="-1" data-bs-backdrop="static">
@@ -198,8 +254,14 @@
         try {
             const resp = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...options });
             let data = await resp.json();
-            if (Array.isArray(data) && data.length === 1) data = data[0];
-            if (data && data.success === false) throw new Error(data.error || 'Error');
+            // Normalizar: si la respuesta es un objeto, lo convertimos en array de un elemento
+            if (!Array.isArray(data)) {
+                data = [data];
+            }
+            // Verificar si el primer elemento tiene la propiedad success = false
+            if (data.length > 0 && data[0].success === false) {
+                throw new Error(data[0].error || 'Error');
+            }
             if (!resp.ok) throw new Error(data.error || 'Error HTTP');
             return data;
         } catch (err) {
@@ -215,7 +277,8 @@
         const password = document.getElementById('password').value;
         try {
             const data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}login`, { method: 'POST', body: JSON.stringify({ usuario, password }) });
-            currentUser = data.user;
+            if (data.length === 0) throw new Error('Respuesta vacía');
+            currentUser = data[0].user;
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
             showDashboard();
         } catch (err) {
@@ -245,7 +308,7 @@
         if (isAdmin || isSupervisor) {
             cargarActivos();
             cargarIntervenciones();
-            cargarReporteAvance();
+            // cargarReporteAvance(); // Descomentar cuando el workflow esté listo
             cargarSelectActivos();
             cargarSelects();
         }
@@ -253,7 +316,7 @@
 
     document.getElementById('logoutBtn').onclick = () => { localStorage.clear(); location.reload(); };
 
-    // ==================== TÉCNICO (Mis Intervenciones y Fotos) ====================
+    // ==================== TÉCNICO ====================
     async function cargarMisIntervenciones() {
         const data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}mis-intervenciones?tecnico_id=${currentUser.id}`);
         const container = document.getElementById('misIntervencionesList');
@@ -272,37 +335,22 @@
 
     async function verDetalleTecnico(intervId) {
         const detalle = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}detalle-intervencion?id=${intervId}`);
-        let sesionActiva = detalle.sesiones ? detalle.sesiones.find(s => s.fin === null) : null;
+        if (!detalle.length) return;
+        const info = detalle[0];
+        let sesionActiva = info.sesiones ? info.sesiones.find(s => s.fin === null) : null;
         let sesionId = sesionActiva ? sesionActiva.id : null;
-        let html = `
-            <h5>${detalle.activo_nombre}</h5>
-            <p><strong>${detalle.tipo_mantenimiento}</strong><br>
-            Plan: ${detalle.fecha_inicio_plan} a ${detalle.fecha_fin_plan}<br>
-            Descripción: ${detalle.descripcion}</p>
-        `;
+        let html = `<h5>${info.activo_nombre}</h5><p><strong>${info.tipo_mantenimiento}</strong><br>Plan: ${info.fecha_inicio_plan} a ${info.fecha_fin_plan}<br>Descripción: ${info.descripcion}</p>`;
         if (sesionActiva) {
             html += `<div class="alert alert-info">Sesión activa desde ${new Date(sesionActiva.inicio).toLocaleString()}</div>`;
             html += `
                 <div class="row">
-                    <div class="col-md-6">
-                        <label>Tipo de foto</label>
-                        <select id="tipoFoto" class="form-select">
-                            <option value="antes">Antes</option>
-                            <option value="durante">Durante</option>
-                            <option value="despues">Después</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label>Subir foto</label>
-                        <input type="file" id="fotoFile" accept="image/*" class="form-control">
-                    </div>
+                    <div class="col-md-6"><label>Tipo de foto</label><select id="tipoFoto" class="form-select"><option value="antes">Antes</option><option value="durante">Durante</option><option value="despues">Después</option></select></div>
+                    <div class="col-md-6"><label>Subir foto</label><input type="file" id="fotoFile" accept="image/*" class="form-control"></div>
                 </div>
                 <button class="btn btn-secondary mt-2" id="subirFotoBtn">Subir foto</button>
                 <hr>
-                <label>Cantidad realizada</label>
-                <input type="number" id="cantidadRealizada" class="form-control">
-                <label>Comentario</label>
-                <textarea id="comentarioCierre" class="form-control"></textarea>
+                <label>Cantidad realizada</label><input type="number" id="cantidadRealizada" class="form-control">
+                <label>Comentario</label><textarea id="comentarioCierre" class="form-control"></textarea>
                 <button class="btn btn-success mt-2" id="cerrarSesionBtn">Cerrar jornada</button>
             `;
         } else {
@@ -314,12 +362,12 @@
         modal.show();
 
         // Cargar fotos existentes
-        if (detalle.sesiones) {
+        if (info.sesiones) {
             const fotosDiv = document.getElementById('fotosPrevias');
-            for (let ses of detalle.sesiones) {
+            for (let ses of info.sesiones) {
                 try {
                     const fotos = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-fotos?sesion_id=${ses.id}`);
-                    if (fotos && fotos.length) {
+                    if (fotos.length) {
                         fotos.forEach(f => {
                             fotosDiv.innerHTML += `<img src="${f.url}" class="foto-preview" title="${f.tipo_foto} - ${new Date(f.subida_en).toLocaleString()}" onclick="window.open('${f.url}')">`;
                         });
@@ -360,11 +408,11 @@
         }
     }
 
-    // ==================== ADMIN / SUPERVISOR (CRUD) ====================
+    // ==================== ADMIN / SUPERVISOR ====================
     async function cargarUsuarios() {
         let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-usuarios`);
-        if (!Array.isArray(data)) data = [data];
         const tbody = document.getElementById('usuariosTableBody');
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay usuarios</td></tr>'; return; }
         tbody.innerHTML = data.map(u => `
             <tr>
                 <td>${u.id}</td>
@@ -405,8 +453,8 @@
 
     async function cargarActivos() {
         let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-activos`);
-        if (!Array.isArray(data)) data = [data];
         const tbody = document.getElementById('activosTableBody');
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay activos</td></tr>'; return; }
         tbody.innerHTML = data.map(a => `
             <tr>
                 <td>${a.id}</td>
@@ -448,14 +496,14 @@
 
     async function cargarIntervenciones() {
         let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-intervenciones`);
-        if (!Array.isArray(data)) data = [data];
         const tbody = document.getElementById('intervencionesTableBody');
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay intervenciones</td></tr>'; return; }
         tbody.innerHTML = data.map(i => `
             <tr>
                 <td>${i.id}</td>
                 <td>${i.activo_nombre}</td>
                 <td>${i.tipo_mantenimiento}</td>
-                <td>${i.fecha_inicio_plan} a ${i.fecha_fin_plan}</td>
+                <td>${i.fecha_inicio_plan ? new Date(i.fecha_inicio_plan).toLocaleDateString() : 'N/A'} a ${i.fecha_fin_plan ? new Date(i.fecha_fin_plan).toLocaleDateString() : 'N/A'}</td>
                 <td>${i.estado}</td>
                 <td>
                     <button class="btn btn-sm btn-info ver-detalle-intervencion" data-id="${i.id}">Ver</button>
@@ -471,10 +519,12 @@
 
     async function verDetalleAdmin(id) {
         const detalle = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}detalle-intervencion?id=${id}`);
-        let html = `<h5>${detalle.activo_nombre}</h5><p>${detalle.descripcion}<br>Fechas plan: ${detalle.fecha_inicio_plan} a ${detalle.fecha_fin_plan}<br>Estado: ${detalle.estado}<br>Real: ${detalle.fecha_inicio_real || 'N/A'} a ${detalle.fecha_fin_real || 'N/A'}</p>`;
+        if (!detalle.length) return;
+        const d = detalle[0];
+        let html = `<h5>${d.activo_nombre}</h5><p>${d.descripcion}<br>Fechas plan: ${d.fecha_inicio_plan} a ${d.fecha_fin_plan}<br>Estado: ${d.estado}<br>Real: ${d.fecha_inicio_real || 'N/A'} a ${d.fecha_fin_real || 'N/A'}</p>`;
         html += `<h6>Sesiones</h6><ul>`;
-        if (detalle.sesiones && detalle.sesiones.length) {
-            detalle.sesiones.forEach(s => {
+        if (d.sesiones && d.sesiones.length) {
+            d.sesiones.forEach(s => {
                 html += `<li>${new Date(s.inicio).toLocaleString()} - ${s.fin ? new Date(s.fin).toLocaleString() : 'Activa'} | Cantidad: ${s.cantidad_realizada || 0} | Técnico: ${s.tecnico_nombre}</li>`;
             });
         } else html += `<li>No hay sesiones</li>`;
@@ -485,20 +535,24 @@
 
     async function editarIntervencion(id) {
         const detalle = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}detalle-intervencion?id=${id}`);
-        document.getElementById('intervId').value = detalle.id;
-        document.getElementById('intervActivoId').value = detalle.activo_id;
-        document.getElementById('intervTipo').value = detalle.tipo_mantenimiento;
-        document.getElementById('intervDescripcion').value = detalle.descripcion || '';
-        document.getElementById('intervFechaInicioPlan').value = detalle.fecha_inicio_plan;
-        document.getElementById('intervFechaFinPlan').value = detalle.fecha_fin_plan;
-        document.getElementById('intervExpediente').value = detalle.expediente_ministerio || '';
+        if (!detalle.length) return;
+        const d = detalle[0];
+        document.getElementById('intervId').value = d.id;
+        document.getElementById('intervActivoId').value = d.activo_id;
+        document.getElementById('intervTipo').value = d.tipo_mantenimiento;
+        document.getElementById('intervDescripcion').value = d.descripcion || '';
+        document.getElementById('intervFechaInicioPlan').value = d.fecha_inicio_plan?.slice(0,10);
+        document.getElementById('intervFechaFinPlan').value = d.fecha_fin_plan?.slice(0,10);
+        document.getElementById('intervExpediente').value = d.expediente_ministerio || '';
         const users = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-usuarios`);
         const tecnicos = users.filter(u => u.rol === 'tecnico');
         const selectTecnico = document.getElementById('intervTecnicoId');
         selectTecnico.innerHTML = tecnicos.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
-        // Obtener técnico asignado actual (simplificado, asumimos que hay uno)
-        const tecnicosAsignados = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-tecnicos-por-intervencion?id=${detalle.id}`).catch(() => []);
-        if (tecnicosAsignados.length) selectTecnico.value = tecnicosAsignados[0].tecnico_id;
+        // Obtener técnico asignado (simplificado)
+        try {
+            const asignaciones = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-tecnicos-por-intervencion?id=${d.id}`);
+            if (asignaciones.length) selectTecnico.value = asignaciones[0].tecnico_id;
+        } catch(e) {}
         new bootstrap.Modal(document.getElementById('modalIntervencion')).show();
     }
 
@@ -511,23 +565,19 @@
     }
 
     async function cargarReporteAvance() {
-        try {
-            let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}reporte-avance`);
-            if (!Array.isArray(data)) data = [data];
-            const tbody = document.getElementById('reporteTableBody');
-            tbody.innerHTML = data.map(r => `
-                <tr>
-                    <td>${r.activo || ''}</td>
-                    <td>${r.tipo_mantenimiento || ''}</td>
-                    <td>${r.fecha_inicio_plan ? new Date(r.fecha_inicio_plan).toLocaleDateString() : 'N/A'} a ${r.fecha_fin_plan ? new Date(r.fecha_fin_plan).toLocaleDateString() : 'N/A'}</td>
-                    <td>${r.fecha_inicio_real ? new Date(r.fecha_inicio_real).toLocaleDateString() : 'N/A'} a ${r.fecha_fin_real ? new Date(r.fecha_fin_real).toLocaleDateString() : 'N/A'}</td>
-                    <td>${r.estado || ''}</td>
-                    <td>${r.fotos_antes || 0} / ${r.fotos_despues || 0}</td>
-                </tr>
-            `).join('');
-        } catch (err) {
-            console.error('Error cargando reporte:', err);
-        }
+        let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}reporte-avance`);
+        const tbody = document.getElementById('reporteTableBody');
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay datos</td></tr>'; return; }
+        tbody.innerHTML = data.map(r => `
+            <tr>
+                <td>${r.activo || ''}</td>
+                <td>${r.tipo_mantenimiento || ''}</td>
+                <td>${r.fecha_inicio_plan ? new Date(r.fecha_inicio_plan).toLocaleDateString() : 'N/A'} a ${r.fecha_fin_plan ? new Date(r.fecha_fin_plan).toLocaleDateString() : 'N/A'}</td>
+                <td>${r.fecha_inicio_real ? new Date(r.fecha_inicio_real).toLocaleDateString() : 'N/A'} a ${r.fecha_fin_real ? new Date(r.fecha_fin_real).toLocaleDateString() : 'N/A'}</td>
+                <td>${r.estado || ''}</td>
+                <td>${r.fotos_antes || 0} / ${r.fotos_despues || 0}</td>
+            </tr>
+        `).join('');
     }
 
     async function cargarSelectActivos() {
