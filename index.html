@@ -2,34 +2,24 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>Mantenimiento Zona Franca</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Evidencias - Mantenimiento</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        body { background-color: #f0f2f5; font-family: 'Segoe UI', system-ui; }
-        .card { border-radius: 20px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        .login-container { max-width: 400px; margin: 80px auto; }
-        .dashboard { display: none; }
-        .custom-toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #28a745;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 40px;
-            z-index: 10000;
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-            font-weight: 500;
+        body { background-color: #f0f2f5; padding: 20px; }
+        .card { border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .camera-container {
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
         }
-        .custom-toast.error { background: #dc3545; }
-        .custom-toast.warning { background: #ffc107; color: #212529; }
-        .foto-preview { max-width: 80px; margin: 5px; border-radius: 8px; cursor: pointer; }
-        .table-responsive { overflow-x: auto; }
-        .btn-sm { margin: 2px; }
+        video, canvas { width: 100%; height: auto; display: block; }
+        .zoom-slider { width: 80%; margin: 10px auto; }
+        .preview-img { max-width: 100%; border-radius: 12px; margin-top: 10px; }
+        .btn-group-custom { margin-top: 15px; display: flex; gap: 10px; justify-content: center; }
         .loading {
             display: none;
             position: fixed;
@@ -43,28 +33,6 @@
             align-items: center;
             color: white;
         }
-        .camera-container {
-            background: #000;
-            border-radius: 16px;
-            overflow: hidden;
-            position: relative;
-            width: 100%;
-            max-width: 500px;
-            margin: 0 auto;
-        }
-        video, canvas {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-        .zoom-slider {
-            width: 80%;
-            margin: 10px auto;
-        }
-        @media (max-width: 768px) {
-            .table-responsive { font-size: 0.8rem; }
-            .camera-container { max-width: 100%; }
-        }
     </style>
 </head>
 <body>
@@ -73,679 +41,190 @@
     <div class="spinner-border text-light" role="status"></div>
 </div>
 
-<!-- Pantalla de Login -->
-<div id="loginContainer" class="container login-container">
+<div class="container">
     <div class="card p-4">
-        <h3 class="text-center mb-4"><i class="fas fa-hard-hat"></i> Mantenimiento Zona Franca</h3>
-        <form id="loginForm">
-            <div class="mb-3"><label class="form-label">Usuario</label><input type="text" id="usuario" class="form-control" required></div>
-            <div class="mb-3"><label class="form-label">Contraseña</label><input type="password" id="password" class="form-control" required></div>
-            <button type="submit" class="btn btn-primary w-100 py-2">Ingresar</button>
-        </form>
-        <div id="loginError" class="alert alert-danger mt-3 d-none"></div>
-    </div>
-</div>
-
-<!-- Dashboard principal -->
-<div id="dashboard" class="dashboard container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
-        <h2><i class="fas fa-tools"></i> Sistema de Mantenimiento</h2>
-        <div><span id="userName" class="badge bg-secondary me-2 p-2"></span><button id="logoutBtn" class="btn btn-outline-danger btn-sm">Cerrar sesión</button></div>
-    </div>
-
-    <ul class="nav nav-tabs" id="mainTabs" role="tablist">
-        <li class="nav-item" id="tabMisIntervencionesLi"><button class="nav-link" id="misIntervencionesTab" data-bs-toggle="tab" data-bs-target="#misIntervenciones">Mis Intervenciones</button></li>
-        <li class="nav-item" id="tabUsuariosLi"><button class="nav-link" id="usuariosTab" data-bs-toggle="tab" data-bs-target="#usuarios">Usuarios</button></li>
-        <li class="nav-item" id="tabActivosLi"><button class="nav-link" id="activosTab" data-bs-toggle="tab" data-bs-target="#activos">Activos</button></li>
-        <li class="nav-item" id="tabIntervencionesLi"><button class="nav-link" id="intervencionesTab" data-bs-toggle="tab" data-bs-target="#intervenciones">Intervenciones</button></li>
-        <li class="nav-item" id="tabReporteLi"><button class="nav-link" id="reporteTab" data-bs-toggle="tab" data-bs-target="#reporte">Reporte Avance</button></li>
-        <li class="nav-item" id="tabHojaVidaLi"><button class="nav-link" id="hojaVidaTab" data-bs-toggle="tab" data-bs-target="#hojaVida">Hoja de Vida</button></li>
-    </ul>
-
-    <div class="tab-content mt-3">
-        <div class="tab-pane fade" id="misIntervenciones"><div class="card p-3"><h4>Mis Intervenciones Asignadas</h4><div id="misIntervencionesList" class="list-group"></div></div></div>
-        <div class="tab-pane fade" id="usuarios"><div class="card p-3"><h4>Gestión de Usuarios</h4><button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalUsuario">+ Nuevo Usuario</button><div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Activo</th><th>Acciones</th></td></thead><tbody id="usuariosTableBody"></tbody></table></div></div></div>
-        <div class="tab-pane fade" id="activos"><div class="card p-3"><h4>Gestión de Activos</h4><button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalActivo">+ Nuevo Activo</button><div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Tipo</th><th>Ubicación</th><th>Acciones</th></td></thead><tbody id="activosTableBody"></tbody></table></div></div></div>
-        <div class="tab-pane fade" id="intervenciones"><div class="card p-3"><h4>Intervenciones</h4><button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalIntervencion">+ Nueva Intervención</button><div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Activo</th><th>Tipo</th><th>Fechas plan</th><th>Estado</th><th>Acciones</th></td></thead><tbody id="intervencionesTableBody"></tbody></tr></div></div></div>
-        <div class="tab-pane fade" id="reporte"><div class="card p-3"><h4>Reporte de Avance</h4><div class="table-responsive"><table class="table table-bordered"><thead><tr><th>Activo</th><th>Tipo</th><th>Fechas plan</th><th>Fechas real</th><th>Estado</th><th>Fotos (A/D)</th></tr></thead><tbody id="reporteTableBody"></tbody></table></div></div></div>
-        <div class="tab-pane fade" id="hojaVida"><div class="card p-3"><h4>Hoja de Vida de Activo</h4><div class="row"><div class="col-md-4"><select id="selectActivo" class="form-select"></select><button id="btnVerHojaVida" class="btn btn-secondary mt-2 w-100">Consultar</button></div><div class="col-md-8"><div id="hojaVidaResultado"></div></div></div></div></div>
-    </div>
-</div>
-
-<!-- Modales CRUD (simplificados pero completos) -->
-<div class="modal fade" id="modalUsuario" tabindex="-1">...</div>
-<div class="modal fade" id="modalActivo" tabindex="-1">...</div>
-<div class="modal fade" id="modalIntervencion" tabindex="-1">...</div>
-
-<!-- Modal Detalle Intervención (técnico) -->
-<div class="modal fade" id="modalDetalleIntervencion" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5>Detalle de Intervención</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="detalleIntervBody">
-                <p>Cargando...</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" id="btnRecargarDetalle">Recargar datos</button>
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-            </div>
+        <h2 class="text-center mb-4">📸 Registro de Evidencias</h2>
+        <div class="mb-3">
+            <label class="form-label">Seleccione el activo (bodega / equipo)</label>
+            <select id="activoSelect" class="form-select" required>
+                <option value="">Cargando activos...</option>
+            </select>
         </div>
-    </div>
-</div>
 
-<!-- Modal Cámara -->
-<div class="modal fade" id="modalCamera" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header"><h5>Tomar foto</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body text-center">
-                <div class="camera-container">
-                    <video id="cameraVideo" autoplay playsinline></video>
-                    <canvas id="cameraCanvas" style="display:none;"></canvas>
-                </div>
-                <div class="mt-2">
-                    <input type="range" id="zoomSlider" class="zoom-slider" min="1" max="3" step="0.05" value="1">
-                    <label>Zoom</label>
-                </div>
-                <div class="mt-3">
-                    <button id="btnTakePhoto" class="btn btn-primary">Tomar foto</button>
-                    <button id="btnRetakePhoto" class="btn btn-warning" style="display:none;">Repetir foto</button>
-                    <button id="btnAcceptPhoto" class="btn btn-success" style="display:none;">Aceptar y subir</button>
-                </div>
-            </div>
+        <div class="camera-container">
+            <video id="cameraVideo" autoplay playsinline></video>
+            <canvas id="cameraCanvas" style="display:none;"></canvas>
         </div>
+        <div class="text-center mt-2">
+            <input type="range" id="zoomSlider" class="zoom-slider" min="1" max="3" step="0.05" value="1">
+            <label>Zoom (acercar/alejar)</label>
+        </div>
+
+        <div class="btn-group-custom">
+            <button id="btnTakePhoto" class="btn btn-primary btn-lg">📷 Tomar foto</button>
+            <button id="btnRetakePhoto" class="btn btn-warning btn-lg" style="display:none;">🔄 Repetir</button>
+            <button id="btnAcceptPhoto" class="btn btn-success btn-lg" style="display:none;">✅ Aceptar y subir</button>
+        </div>
+
+        <div id="previewArea" class="mt-3 text-center" style="display:none;">
+            <h5>Vista previa</h5>
+            <img id="previewImg" class="preview-img" src="">
+        </div>
+
+        <div id="messageArea" class="mt-3 alert alert-info d-none"></div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // ==================== CONFIGURACIÓN ====================
-    const N8N_BASE_URL = 'https://api.enusa.org';
-    const WEBHOOK_PREFIX = 'mtto_01_';
-    let currentUser = null;
+    const N8N_BASE = 'https://api.enusa.org';          // Cambia por tu dominio de n8n
+    const WEBHOOK_LISTAR = `${N8N_BASE}/webhook/listar-activos`;
+    const WEBHOOK_SUBIR = `${N8N_BASE}/webhook/subir-foto`;
+    const TECNICO_ID = 1;   // ID del técnico (puedes cambiarlo después)
+
     let currentStream = null;
     let currentZoom = 1;
     let photoData = null;
-    let currentSesionId = null;
-    let currentIntervId = null;
-    let currentModal = null;
+    let currentActivoId = null;
 
-    // Notificaciones
-    function showNotification(msg, type = 'success') {
-        const existing = document.querySelector('.custom-toast');
-        if(existing) existing.remove();
-        const toast = document.createElement('div');
-        toast.className = `custom-toast ${type}`;
-        toast.innerText = msg;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.style.opacity = '1', 10);
-        setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
+    // Elementos DOM
+    const video = document.getElementById('cameraVideo');
+    const canvas = document.getElementById('cameraCanvas');
+    const zoomSlider = document.getElementById('zoomSlider');
+    const btnTake = document.getElementById('btnTakePhoto');
+    const btnRetake = document.getElementById('btnRetakePhoto');
+    const btnAccept = document.getElementById('btnAcceptPhoto');
+    const previewArea = document.getElementById('previewArea');
+    const previewImg = document.getElementById('previewImg');
+    const messageDiv = document.getElementById('messageArea');
+    const activoSelect = document.getElementById('activoSelect');
+    const loading = document.getElementById('loading');
+
+    function showMessage(msg, type = 'success') {
+        messageDiv.className = `alert alert-${type}`;
+        messageDiv.innerHTML = msg;
+        messageDiv.classList.remove('d-none');
+        setTimeout(() => messageDiv.classList.add('d-none'), 4000);
     }
 
-    function showConfirm(message) {
-        return new Promise((resolve) => {
-            const modalEl = document.createElement('div');
-            modalEl.className = 'modal fade';
-            modalEl.innerHTML = `<div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5>Confirmar</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">${message}</div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-danger" id="confirmOk">Aceptar</button></div></div></div>`;
-            document.body.appendChild(modalEl);
-            const modal = new bootstrap.Modal(modalEl);
-            modal.show();
-            const okBtn = modalEl.querySelector('#confirmOk');
-            const handleOk = () => { modal.hide(); resolve(true); cleanup(); };
-            const cleanup = () => { modalEl.remove(); okBtn.removeEventListener('click', handleOk); };
-            okBtn.addEventListener('click', handleOk);
-            modalEl.addEventListener('hidden.bs.modal', () => { resolve(false); cleanup(); });
-        });
-    }
-
-    function showLoading() { document.getElementById('loading').style.display = 'flex'; }
-    function hideLoading() { document.getElementById('loading').style.display = 'none'; }
-
-    async function apiCall(url, options = {}) {
-        showLoading();
-        try {
-            const resp = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...options });
-            let data = await resp.json();
-            if (!Array.isArray(data)) data = [data];
-            if (data.length > 0 && data[0].success === false) throw new Error(data[0].error || 'Error');
-            if (!resp.ok) throw new Error(data.error || 'Error HTTP');
-            return data;
-        } catch (err) {
-            showNotification('Error: ' + err.message, 'error');
-            throw err;
-        } finally { hideLoading(); }
-    }
-
-    // ==================== LOGIN ====================
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const usuario = document.getElementById('usuario').value;
-        const password = document.getElementById('password').value;
-        try {
-            const data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}login`, { method: 'POST', body: JSON.stringify({ usuario, password }) });
-            if (data.length === 0) throw new Error('Respuesta vacía');
-            currentUser = data[0].user;
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            showDashboard();
-        } catch (err) {
-            document.getElementById('loginError').classList.remove('d-none');
-            document.getElementById('loginError').innerText = err.message;
-        }
-    });
-
-    function showDashboard() {
-        document.getElementById('loginContainer').style.display = 'none';
-        document.getElementById('dashboard').style.display = 'block';
-        document.getElementById('userName').innerHTML = `${currentUser.nombre} (${currentUser.rol})`;
-        const isAdmin = currentUser.rol === 'admin';
-        const isSupervisor = currentUser.rol === 'supervisor';
-        const isTecnico = currentUser.rol === 'tecnico';
-        document.getElementById('tabUsuariosLi').style.display = isAdmin ? 'block' : 'none';
-        document.getElementById('tabActivosLi').style.display = (isAdmin || isSupervisor) ? 'block' : 'none';
-        document.getElementById('tabIntervencionesLi').style.display = (isAdmin || isSupervisor) ? 'block' : 'none';
-        document.getElementById('tabReporteLi').style.display = (isAdmin || isSupervisor) ? 'block' : 'none';
-        document.getElementById('tabHojaVidaLi').style.display = (isAdmin || isSupervisor) ? 'block' : 'none';
-        document.getElementById('tabMisIntervencionesLi').style.display = isTecnico ? 'block' : 'none';
-        const firstTab = isTecnico ? '#misIntervencionesTab' : (isAdmin ? '#usuariosTab' : '#activosTab');
-        const tabTrigger = new bootstrap.Tab(document.querySelector(firstTab));
-        tabTrigger.show();
-        if (isTecnico) cargarMisIntervenciones();
-        if (isAdmin) cargarUsuarios();
-        if (isAdmin || isSupervisor) {
-            cargarActivos();
-            cargarIntervenciones();
-            cargarReporteAvance();
-            cargarSelectActivos();
-            cargarSelects();
-        }
-    }
-
-    document.getElementById('logoutBtn').onclick = () => { localStorage.clear(); location.reload(); };
-
-    // ==================== ADMIN / SUPERVISOR (CRUD) ====================
-    async function cargarUsuarios() {
-        let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-usuarios`);
-        const tbody = document.getElementById('usuariosTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay usuarios</td></tr>'; return; }
-        tbody.innerHTML = data.map(u => `
-            <tr>
-                <td>${u.id}</td>
-                <td>${u.usuario}</td>
-                <td>${u.nombre}</td>
-                <td>${u.rol}</td>
-                <td>${u.activo ? 'Sí' : 'No'}</td>
-                <td>
-                    <button class="btn btn-sm btn-warning editar-usuario" data-id="${u.id}">Editar</button>
-                    <button class="btn btn-sm btn-danger eliminar-usuario" data-id="${u.id}">Eliminar</button>
-                </td>
-            </tr>
-        `).join('');
-        document.querySelectorAll('.editar-usuario').forEach(btn => btn.onclick = () => editarUsuario(btn.dataset.id));
-        document.querySelectorAll('.eliminar-usuario').forEach(btn => btn.onclick = () => eliminarUsuario(btn.dataset.id));
-    }
-
-    async function editarUsuario(id) {
-        const users = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-usuarios`);
-        const user = users.find(u => u.id == id);
-        if (user) {
-            document.getElementById('usuarioId').value = user.id;
-            document.getElementById('usuarioUsername').value = user.usuario;
-            document.getElementById('usuarioNombre').value = user.nombre;
-            document.getElementById('usuarioRol').value = user.rol;
-            document.getElementById('usuarioActivo').checked = user.activo;
-            document.getElementById('usuarioPassword').value = '';
-            new bootstrap.Modal(document.getElementById('modalUsuario')).show();
-        }
-    }
-
-    async function eliminarUsuario(id) {
-        if (!(await showConfirm('¿Eliminar este usuario? Esta acción no se puede deshacer.'))) return;
-        await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}eliminar-usuario`, { method: 'DELETE', body: JSON.stringify({ id, admin_id: currentUser.id }) });
-        showNotification('Usuario eliminado');
-        cargarUsuarios();
-    }
-
+    // Cargar activos desde n8n (o usar lista local si falla)
     async function cargarActivos() {
-        let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-activos`);
-        const tbody = document.getElementById('activosTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay activos</td></tr>'; return; }
-        tbody.innerHTML = data.map(a => `
-            <tr>
-                <td>${a.id}</td>
-                <td>${a.codigo}</td>
-                <td>${a.nombre}</td>
-                <td>${a.tipo}</td>
-                <td>${a.ubicacion || ''}</td>
-                <td>
-                    <button class="btn btn-sm btn-warning editar-activo" data-id="${a.id}">Editar</button>
-                    <button class="btn btn-sm btn-danger eliminar-activo" data-id="${a.id}">Eliminar</button>
-                </td>
-            </tr>
-        `).join('');
-        document.querySelectorAll('.editar-activo').forEach(btn => btn.onclick = () => editarActivo(btn.dataset.id));
-        document.querySelectorAll('.eliminar-activo').forEach(btn => btn.onclick = () => eliminarActivo(btn.dataset.id));
-    }
-
-    async function editarActivo(id) {
-        const activos = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-activos`);
-        const activo = activos.find(a => a.id == id);
-        if (activo) {
-            document.getElementById('activoId').value = activo.id;
-            document.getElementById('activoCodigo').value = activo.codigo;
-            document.getElementById('activoNombre').value = activo.nombre;
-            document.getElementById('activoTipo').value = activo.tipo;
-            document.getElementById('activoUbicacion').value = activo.ubicacion || '';
-            new bootstrap.Modal(document.getElementById('modalActivo')).show();
-        }
-    }
-
-    async function eliminarActivo(id) {
-        if (!(await showConfirm('¿Eliminar este activo? Se perderán intervenciones asociadas.'))) return;
-        await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}eliminar-activo`, { method: 'DELETE', body: JSON.stringify({ id, creado_por: currentUser.id }) });
-        showNotification('Activo eliminado');
-        cargarActivos();
-        cargarSelectActivos();
-        cargarSelects();
-    }
-
-    async function cargarIntervenciones() {
-        let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-intervenciones`);
-        const tbody = document.getElementById('intervencionesTableBody');
-        if (!data.length) { tbody.innerHTML = '<td><td colspan="6">No hay intervenciones</td></tr>'; return; }
-        tbody.innerHTML = data.map(i => `
-            <tr>
-                <td>${i.id}</td>
-                <td>${i.activo_nombre}</td>
-                <td>${i.tipo_mantenimiento}</td>
-                <td>${i.fecha_inicio_plan ? new Date(i.fecha_inicio_plan).toLocaleDateString() : 'N/A'} a ${i.fecha_fin_plan ? new Date(i.fecha_fin_plan).toLocaleDateString() : 'N/A'}</td>
-                <td>${i.estado}</td>
-                <td>
-                    <button class="btn btn-sm btn-info ver-detalle-intervencion" data-id="${i.id}">Ver</button>
-                    <button class="btn btn-sm btn-warning editar-intervencion" data-id="${i.id}">Editar</button>
-                    <button class="btn btn-sm btn-danger eliminar-intervencion" data-id="${i.id}">Eliminar</button>
-                </td>
-            </tr>
-        `).join('');
-        document.querySelectorAll('.ver-detalle-intervencion').forEach(btn => btn.onclick = () => verDetalleAdmin(btn.dataset.id));
-        document.querySelectorAll('.editar-intervencion').forEach(btn => btn.onclick = () => editarIntervencion(btn.dataset.id));
-        document.querySelectorAll('.eliminar-intervencion').forEach(btn => btn.onclick = () => eliminarIntervencion(btn.dataset.id));
-    }
-
-    async function verDetalleAdmin(id) {
-        const detalle = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}detalle-intervencion?id=${id}`);
-        if (!detalle.length) return;
-        const d = detalle[0];
-        let html = `<h5>${d.activo_nombre}</h5><p>${d.descripcion}<br>Fechas plan: ${d.fecha_inicio_plan} a ${d.fecha_fin_plan}<br>Estado: ${d.estado}<br>Real: ${d.fecha_inicio_real || 'N/A'} a ${d.fecha_fin_real || 'N/A'}</p>`;
-        html += `<h6>Sesiones</h6><ul>`;
-        if (d.sesiones && d.sesiones.length) {
-            d.sesiones.forEach(s => {
-                html += `<li>${new Date(s.inicio).toLocaleString()} - ${s.fin ? new Date(s.fin).toLocaleString() : 'Activa'} | Cantidad: ${s.cantidad_realizada || 0} | Técnico: ${s.tecnico_nombre}</li>`;
-            });
-        } else html += `<li>No hay sesiones</li>`;
-        html += `</ul>`;
-        document.getElementById('detalleIntervBody').innerHTML = html;
-        new bootstrap.Modal(document.getElementById('modalDetalleIntervencion')).show();
-    }
-
-    async function editarIntervencion(id) {
-        const detalle = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}detalle-intervencion?id=${id}`);
-        if (!detalle.length) return;
-        const d = detalle[0];
-        document.getElementById('intervId').value = d.id;
-        document.getElementById('intervActivoId').value = d.activo_id;
-        document.getElementById('intervTipo').value = d.tipo_mantenimiento;
-        document.getElementById('intervDescripcion').value = d.descripcion || '';
-        document.getElementById('intervFechaInicioPlan').value = d.fecha_inicio_plan?.slice(0,10);
-        document.getElementById('intervFechaFinPlan').value = d.fecha_fin_plan?.slice(0,10);
-        document.getElementById('intervExpediente').value = d.expediente_ministerio || '';
-        const users = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-usuarios`);
-        const tecnicos = users.filter(u => u.rol === 'tecnico');
-        const selectTecnico = document.getElementById('intervTecnicoId');
-        selectTecnico.innerHTML = tecnicos.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
-        new bootstrap.Modal(document.getElementById('modalIntervencion')).show();
-    }
-
-    async function eliminarIntervencion(id) {
-        if (!(await showConfirm('¿Eliminar esta intervención? Se perderán sesiones y fotos.'))) return;
-        await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}eliminar-intervencion`, { method: 'DELETE', body: JSON.stringify({ id, creado_por: currentUser.id }) });
-        showNotification('Intervención eliminada');
-        cargarIntervenciones();
-        cargarReporteAvance();
-    }
-
-    async function cargarReporteAvance() {
-        let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}reporte-avance`);
-        const tbody = document.getElementById('reporteTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay datos</td></tr>'; return; }
-        tbody.innerHTML = data.map(r => `
-            <tr>
-                <td>${r.activo || ''}</td>
-                <td>${r.tipo_mantenimiento || ''}</td>
-                <td>${r.fecha_inicio_plan ? new Date(r.fecha_inicio_plan).toLocaleDateString() : 'N/A'} a ${r.fecha_fin_plan ? new Date(r.fecha_fin_plan).toLocaleDateString() : 'N/A'}</td>
-                <td>${r.fecha_inicio_real ? new Date(r.fecha_inicio_real).toLocaleDateString() : 'N/A'} a ${r.fecha_fin_real ? new Date(r.fecha_fin_real).toLocaleDateString() : 'N/A'}</td>
-                <td>${r.estado || ''}</td>
-                <td>${r.fotos_antes || 0} / ${r.fotos_despues || 0}</td>
-            </tr>
-        `).join('');
-    }
-
-    async function cargarSelectActivos() {
-        const data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-activos`);
-        const select = document.getElementById('selectActivo');
-        select.innerHTML = '<option value="">Seleccione...</option>' + data.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
-        document.getElementById('btnVerHojaVida').onclick = async () => {
-            const activoId = select.value;
-            if (!activoId) return showNotification('Seleccione un activo', 'warning');
-            const hv = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}hoja-vida-activo?activo_id=${activoId}`);
-            document.getElementById('hojaVidaResultado').innerHTML = `<pre>${JSON.stringify(hv, null, 2)}</pre>`;
-        };
-    }
-
-    async function cargarSelects() {
-        const activos = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-activos`);
-        const selectActivo = document.getElementById('intervActivoId');
-        selectActivo.innerHTML = activos.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
-        const users = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-usuarios`);
-        const tecnicos = users.filter(u => u.rol === 'tecnico');
-        const selectTecnico = document.getElementById('intervTecnicoId');
-        selectTecnico.innerHTML = tecnicos.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
-    }
-
-    // ==================== TÉCNICO ====================
-    async function cargarMisIntervenciones() {
-        const data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}mis-intervenciones?tecnico_id=${currentUser.id}`);
-        const container = document.getElementById('misIntervencionesList');
-        if (!data.length) { container.innerHTML = '<div class="alert alert-info">No hay intervenciones asignadas.</div>'; return; }
-        container.innerHTML = data.map(i => `
-            <div class="list-group-item">
-                <div class="d-flex justify-content-between">
-                    <h5>${i.activo_nombre} - ${i.tipo_mantenimiento}</h5>
-                    <button class="btn btn-sm btn-primary ver-detalle" data-id="${i.id}">Trabajar</button>
-                </div>
-                <p>${i.descripcion || ''} | Plan: ${i.fecha_inicio_plan} a ${i.fecha_fin_plan} | Estado: ${i.estado}</p>
-            </div>
-        `).join('');
-        document.querySelectorAll('.ver-detalle').forEach(btn => btn.onclick = () => verDetalleTecnico(btn.dataset.id));
-    }
-
-    // Función principal que muestra el detalle y maneja los botones
-    async function verDetalleTecnico(intervId) {
-        currentIntervId = intervId;
-        // Mostrar modal (si no está ya abierto)
-        if (!currentModal) {
-            currentModal = new bootstrap.Modal(document.getElementById('modalDetalleIntervencion'));
-        }
-        currentModal.show();
-        await cargarDetalleYRenderizar(intervId);
-    }
-
-    async function cargarDetalleYRenderizar(intervId) {
         try {
-            const data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}detalle-intervencion?id=${intervId}`);
-            let detalle = Array.isArray(data) ? data[0] : data;
-            if (detalle && detalle.detalle) detalle = detalle.detalle;
-            if (!detalle || detalle.error) throw new Error('No se pudo cargar la intervención');
-            
-            let sesionActiva = detalle.sesiones ? detalle.sesiones.find(s => s.fin === null) : null;
-            let sesionId = sesionActiva ? sesionActiva.id : null;
-            currentSesionId = sesionId;
-            console.log('Detalle recibido:', detalle);
-            console.log('Sesión activa:', sesionActiva);
-            
-            let html = `<h5>${detalle.activo_nombre || 'Activo'}</h5>
-                        <p><strong>${detalle.tipo_mantenimiento || ''}</strong><br>
-                        Plan: ${detalle.fecha_inicio_plan ? new Date(detalle.fecha_inicio_plan).toLocaleDateString() : 'N/A'} a ${detalle.fecha_fin_plan ? new Date(detalle.fecha_fin_plan).toLocaleDateString() : 'N/A'}<br>
-                        Descripción: ${detalle.descripcion || 'Sin descripción'}</p>`;
-            
-            if (sesionActiva) {
-                html += `<div class="alert alert-info">Sesión activa desde ${new Date(sesionActiva.inicio).toLocaleString()}</div>`;
-                html += `
-                    <div class="row">
-                        <div class="col-md-6"><label>Tipo de foto</label><select id="tipoFoto" class="form-select"><option value="antes">Antes</option><option value="durante">Durante</option><option value="despues">Después</option></select></div>
-                        <div class="col-md-6"><button id="openCameraBtn" class="btn btn-primary w-100">Abrir cámara</button></div>
-                    </div>
-                    <div id="fotoPreview" class="mt-2"></div>
-                    <hr>
-                    <label>Cantidad realizada</label><input type="number" id="cantidadRealizada" class="form-control">
-                    <label>Comentario</label><textarea id="comentarioCierre" class="form-control"></textarea>
-                    <button class="btn btn-success mt-2" id="cerrarSesionBtn">Cerrar jornada</button>
-                `;
-            } else {
-                html += `<button class="btn btn-primary" id="iniciarSesionBtn">Iniciar jornada</button>`;
-            }
-            html += `<hr><h6>Fotos registradas</h6><div id="fotosPrevias" class="d-flex flex-wrap"></div>`;
-            document.getElementById('detalleIntervBody').innerHTML = html;
-            
-            // Cargar fotos existentes
-            if (detalle.sesiones) {
-                const fotosDiv = document.getElementById('fotosPrevias');
-                fotosDiv.innerHTML = '';
-                for (let ses of detalle.sesiones) {
-                    try {
-                        const fotos = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-fotos?sesion_id=${ses.id}`);
-                        if (fotos.length) {
-                            fotos.forEach(f => {
-                                fotosDiv.innerHTML += `<img src="${f.url}" class="foto-preview" title="${f.tipo_foto} - ${new Date(f.subida_en).toLocaleString()}" onclick="window.open('${f.url}')">`;
-                            });
-                        }
-                    } catch(e) {}
-                }
-            }
-            
-            // Asignar eventos (usando clonación para evitar duplicados)
-            if (!sesionActiva) {
-                const btnIniciar = document.getElementById('iniciarSesionBtn');
-                if (btnIniciar) {
-                    const newBtn = btnIniciar.cloneNode(true);
-                    btnIniciar.parentNode.replaceChild(newBtn, btnIniciar);
-                    newBtn.onclick = async () => {
-                        await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}iniciar-sesion`, {
-                            method: 'POST',
-                            body: JSON.stringify({ intervencion_id: intervId, tecnico_id: currentUser.id })
-                        });
-                        showNotification('Sesión iniciada');
-                        // Recargar el contenido del modal sin cerrarlo
-                        await cargarDetalleYRenderizar(intervId);
-                    };
-                }
-            } else {
-                const btnCamera = document.getElementById('openCameraBtn');
-                if (btnCamera) {
-                    const newCam = btnCamera.cloneNode(true);
-                    btnCamera.parentNode.replaceChild(newCam, btnCamera);
-                    newCam.onclick = () => abrirCamara();
-                }
-                const btnCerrar = document.getElementById('cerrarSesionBtn');
-                if (btnCerrar) {
-                    const newCerrar = btnCerrar.cloneNode(true);
-                    btnCerrar.parentNode.replaceChild(newCerrar, btnCerrar);
-                    newCerrar.onclick = async () => {
-                        const cantidad = document.getElementById('cantidadRealizada').value;
-                        const comentario = document.getElementById('comentarioCierre').value;
-                        await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}cerrar-sesion`, {
-                            method: 'POST',
-                            body: JSON.stringify({ sesion_id: sesionId, cantidad_realizada: cantidad, comentario })
-                        });
-                        showNotification('Sesión cerrada');
-                        if (currentModal) currentModal.hide();
-                        cargarMisIntervenciones();
-                    };
-                }
-            }
+            const response = await fetch(WEBHOOK_LISTAR);
+            if (!response.ok) throw new Error('Error al cargar activos');
+            const activos = await response.json();
+            if (!activos.length) throw new Error('No hay activos registrados');
+            activoSelect.innerHTML = '<option value="">Seleccione un activo...</option>' +
+                activos.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
         } catch (err) {
             console.error(err);
-            showNotification('Error al cargar detalle', 'error');
-            document.getElementById('detalleIntervBody').innerHTML = '<p>Error al cargar los datos. Intente de nuevo.</p>';
+            // Fallback: activos de ejemplo (por si el webhook no está listo)
+            const activosEjemplo = [
+                { id: 1, codigo: 'BOD-01', nombre: 'Bodega Central' },
+                { id: 2, codigo: 'BOD-02', nombre: 'Bodega Norte' },
+                { id: 3, codigo: 'AND-01', nombre: 'Andén Sur' },
+                { id: 4, codigo: 'BAS-01', nombre: 'Báscula Principal' },
+                { id: 5, codigo: 'TECH-01', nombre: 'Techo Administrativo' }
+            ];
+            activoSelect.innerHTML = '<option value="">Seleccione un activo...</option>' +
+                activosEjemplo.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
+            showMessage('Usando activos de ejemplo (conexión a listar-activos falló)', 'warning');
         }
     }
 
-    // Botón recargar dentro del modal
-    document.getElementById('btnRecargarDetalle').addEventListener('click', async () => {
-        if (currentIntervId) {
-            await cargarDetalleYRenderizar(currentIntervId);
-            showNotification('Datos recargados');
-        }
-    });
-
-    // ==================== CÁMARA ====================
-    async function abrirCamara() {
-        const modalCamera = new bootstrap.Modal(document.getElementById('modalCamera'));
-        const video = document.getElementById('cameraVideo');
-        const canvas = document.getElementById('cameraCanvas');
-        const zoomSlider = document.getElementById('zoomSlider');
-        const btnTake = document.getElementById('btnTakePhoto');
-        const btnRetake = document.getElementById('btnRetakePhoto');
-        const btnAccept = document.getElementById('btnAcceptPhoto');
-        const previewDiv = document.getElementById('fotoPreview');
-        
-        if (currentStream) {
-            currentStream.getTracks().forEach(track => track.stop());
-        }
-        
+    // Iniciar cámara trasera
+    async function iniciarCamara() {
+        if (currentStream) currentStream.getTracks().forEach(track => track.stop());
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
             currentStream = stream;
             video.srcObject = stream;
             await video.play();
             video.style.transform = `scale(${currentZoom})`;
-            modalCamera.show();
-        } catch (err) {
-            showNotification('No se pudo acceder a la cámara', 'error');
-            return;
-        }
-        
-        zoomSlider.oninput = (e) => {
-            currentZoom = parseFloat(e.target.value);
-            video.style.transform = `scale(${currentZoom})`;
-        };
-        
-        btnTake.onclick = () => {
-            const context = canvas.getContext('2d');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            photoData = canvas.toDataURL('image/jpeg', 0.8);
-            previewDiv.innerHTML = `<img src="${photoData}" style="max-width:100%; border-radius:8px;">`;
-            btnTake.style.display = 'none';
-            btnRetake.style.display = 'inline-block';
-            btnAccept.style.display = 'inline-block';
-        };
-        
-        btnRetake.onclick = () => {
-            photoData = null;
-            previewDiv.innerHTML = '';
+            // Resetear interfaz
             btnTake.style.display = 'inline-block';
             btnRetake.style.display = 'none';
             btnAccept.style.display = 'none';
-        };
-        
-        btnAccept.onclick = async () => {
-            if (!photoData) return;
-            const tipoFoto = document.getElementById('tipoFoto').value;
-            try {
-                await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}subir-foto`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        sesion_id: currentSesionId,
-                        tipo_foto: tipoFoto,
-                        foto_base64: photoData,
-                        tecnico_id: currentUser.id
-                    })
-                });
-                showNotification('Foto subida correctamente');
-                modalCamera.hide();
-                await cargarDetalleYRenderizar(currentIntervId);
-                cargarMisIntervenciones();
-            } catch (err) {
-                showNotification('Error al subir foto', 'error');
-            } finally {
-                if (currentStream) {
-                    currentStream.getTracks().forEach(track => track.stop());
-                    currentStream = null;
-                }
+            previewArea.style.display = 'none';
+            photoData = null;
+        } catch (err) {
+            showMessage('No se pudo acceder a la cámara. Verifique permisos.', 'danger');
+            console.error(err);
+        }
+    }
+
+    // Zoom dinámico
+    zoomSlider.oninput = (e) => {
+        currentZoom = parseFloat(e.target.value);
+        video.style.transform = `scale(${currentZoom})`;
+    };
+
+    // Tomar foto
+    btnTake.onclick = () => {
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        photoData = canvas.toDataURL('image/jpeg', 0.8);
+        previewImg.src = photoData;
+        previewArea.style.display = 'block';
+        btnTake.style.display = 'none';
+        btnRetake.style.display = 'inline-block';
+        btnAccept.style.display = 'inline-block';
+    };
+
+    // Repetir foto
+    btnRetake.onclick = () => {
+        photoData = null;
+        previewArea.style.display = 'none';
+        btnTake.style.display = 'inline-block';
+        btnRetake.style.display = 'none';
+        btnAccept.style.display = 'none';
+    };
+
+    // Subir foto
+    btnAccept.onclick = async () => {
+        if (!photoData) return;
+        const activoId = activoSelect.value;
+        if (!activoId) {
+            showMessage('Debe seleccionar un activo', 'warning');
+            return;
+        }
+        loading.style.display = 'flex';
+        try {
+            const response = await fetch(WEBHOOK_SUBIR, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    activo_id: parseInt(activoId),
+                    tecnico_id: TECNICO_ID,
+                    foto_base64: photoData
+                })
+            });
+            const result = await response.json();
+            if (result.success) {
+                showMessage('Foto guardada correctamente', 'success');
+                await iniciarCamara();   // Reiniciar cámara
+                activoSelect.value = ''; // Limpiar selección
+                photoData = null;
+                previewArea.style.display = 'none';
                 btnTake.style.display = 'inline-block';
                 btnRetake.style.display = 'none';
                 btnAccept.style.display = 'none';
-                photoData = null;
-                previewDiv.innerHTML = '';
+            } else {
+                throw new Error(result.error || 'Error al guardar');
             }
-        };
-        
-        document.getElementById('modalCamera').addEventListener('hidden.bs.modal', () => {
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
-                currentStream = null;
-            }
-        });
-    }
-
-    // ==================== BOTONES GUARDAR (CRUD) ====================
-    document.getElementById('guardarUsuarioBtn').onclick = async () => {
-        const id = document.getElementById('usuarioId').value;
-        const usuario = document.getElementById('usuarioUsername').value;
-        const nombre = document.getElementById('usuarioNombre').value;
-        const password = document.getElementById('usuarioPassword').value;
-        const rol = document.getElementById('usuarioRol').value;
-        const activo = document.getElementById('usuarioActivo').checked;
-        if (!usuario || !nombre) return showNotification('Usuario y nombre son obligatorios', 'warning');
-        const data = { admin_id: currentUser.id, usuario, nombre, rol, activo };
-        if (password) data.password = password;
-        if (id) data.id = id;
-        const url = id ? `${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}actualizar-usuario` : `${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}crear-usuario`;
-        await apiCall(url, { method: 'POST', body: JSON.stringify(data) });
-        showNotification('Usuario guardado');
-        bootstrap.Modal.getInstance(document.getElementById('modalUsuario')).hide();
-        cargarUsuarios();
+        } catch (err) {
+            showMessage('Error al subir la foto: ' + err.message, 'danger');
+        } finally {
+            loading.style.display = 'none';
+        }
     };
 
-    document.getElementById('guardarActivoBtn').onclick = async () => {
-        const id = document.getElementById('activoId').value;
-        const data = {
-            codigo: document.getElementById('activoCodigo').value,
-            nombre: document.getElementById('activoNombre').value,
-            tipo: document.getElementById('activoTipo').value,
-            ubicacion: document.getElementById('activoUbicacion').value,
-            creado_por: currentUser.id
-        };
-        if (id) data.id = id;
-        const url = id ? `${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}actualizar-activo` : `${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}crear-activo`;
-        await apiCall(url, { method: 'POST', body: JSON.stringify(data) });
-        showNotification('Activo guardado');
-        bootstrap.Modal.getInstance(document.getElementById('modalActivo')).hide();
-        cargarActivos();
-        cargarSelectActivos();
-        cargarSelects();
-    };
-
-    document.getElementById('guardarIntervencionBtn').onclick = async () => {
-        const id = document.getElementById('intervId').value;
-        const data = {
-            activo_id: document.getElementById('intervActivoId').value,
-            tipo_mantenimiento: document.getElementById('intervTipo').value,
-            descripcion: document.getElementById('intervDescripcion').value,
-            fecha_inicio_plan: document.getElementById('intervFechaInicioPlan').value,
-            fecha_fin_plan: document.getElementById('intervFechaFinPlan').value,
-            expediente: document.getElementById('intervExpediente').value,
-            creado_por: currentUser.id,
-            tecnico_id: document.getElementById('intervTecnicoId').value
-        };
-        if (id) data.id = id;
-        const url = id ? `${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}actualizar-intervencion` : `${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}crear-intervencion`;
-        await apiCall(url, { method: 'POST', body: JSON.stringify(data) });
-        showNotification('Intervención guardada');
-        bootstrap.Modal.getInstance(document.getElementById('modalIntervencion')).hide();
-        cargarIntervenciones();
-        cargarReporteAvance();
-    };
-
-    // Inicialización
-    (function init() {
-        const stored = localStorage.getItem('currentUser');
-        if (stored) { currentUser = JSON.parse(stored); showDashboard(); }
-        cargarSelects();
+    // Inicializar
+    (async function init() {
+        await cargarActivos();
+        await iniciarCamara();
     })();
 </script>
 </body>
