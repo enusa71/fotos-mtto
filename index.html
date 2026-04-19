@@ -105,7 +105,7 @@
     <div class="tab-content mt-3">
         <div class="tab-pane fade" id="misIntervenciones"><div class="card p-3"><h4>Mis Intervenciones Asignadas</h4><div id="misIntervencionesList" class="list-group"></div></div></div>
         <div class="tab-pane fade" id="usuarios"><div class="card p-3"><h4>Gestión de Usuarios</h4><button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalUsuario">+ Nuevo Usuario</button><div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Activo</th><th>Acciones</th></tr></thead><tbody id="usuariosTableBody"></tbody></table></div></div></div>
-        <div class="tab-pane fade" id="activos"><div class="card p-3"><h4>Gestión de Activos</h4><button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalActivo">+ Nuevo Activo</button><div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Tipo</th><th>Ubicación</th><th>Acciones</th></tr></thead><tbody id="activosTableBody"></tbody></td></div></div></div>
+        <div class="tab-pane fade" id="activos"><div class="card p-3"><h4>Gestión de Activos</h4><button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalActivo">+ Nuevo Activo</button><div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Tipo</th><th>Ubicación</th><th>Acciones</th></tr></thead><tbody id="activosTableBody"></tbody></table></div></div></div>
         <div class="tab-pane fade" id="intervenciones"><div class="card p-3"><h4>Intervenciones</h4><button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalIntervencion">+ Nueva Intervención</button><div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Activo</th><th>Tipo</th><th>Fechas plan</th><th>Estado</th><th>Acciones</th></td></thead><tbody id="intervencionesTableBody"></tbody></table></div></div></div>
         <div class="tab-pane fade" id="reporte"><div class="card p-3"><h4>Reporte de Avance</h4><div class="table-responsive"><table class="table table-bordered"><thead><tr><th>Activo</th><th>Tipo</th><th>Fechas plan</th><th>Fechas real</th><th>Estado</th><th>Fotos (A/D)</th></tr></thead><tbody id="reporteTableBody"></tbody></table></div></div></div>
         <div class="tab-pane fade" id="hojaVida"><div class="card p-3"><h4>Hoja de Vida de Activo</h4><div class="row"><div class="col-md-4"><select id="selectActivo" class="form-select"></select><button id="btnVerHojaVida" class="btn btn-secondary mt-2 w-100">Consultar</button></div><div class="col-md-8"><div id="hojaVidaResultado"></div></div></div></div></div>
@@ -452,7 +452,6 @@
         const tecnicos = users.filter(u => u.rol === 'tecnico');
         const selectTecnico = document.getElementById('intervTecnicoId');
         selectTecnico.innerHTML = tecnicos.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
-        // Si hay técnico asignado (opcional)
         if (d.tecnico_id) selectTecnico.value = d.tecnico_id;
         new bootstrap.Modal(document.getElementById('modalIntervencion')).show();
     }
@@ -573,10 +572,13 @@
 
             if (!sesionActiva) {
                 document.getElementById('iniciarSesionBtn').onclick = async () => {
-                    await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}iniciar-sesion`, { method: 'POST', body: JSON.stringify({ intervencion_id: intervId, tecnico_id: currentUser.id }) });
-                    modal.hide();
-                    cargarMisIntervenciones();
+                    await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}iniciar-sesion`, {
+                        method: 'POST',
+                        body: JSON.stringify({ intervencion_id: intervId, tecnico_id: currentUser.id })
+                    });
                     showNotification('Sesión iniciada');
+                    // Recargar el detalle para mostrar la sesión activa sin cerrar el modal
+                    await verDetalleTecnico(intervId);
                 };
             } else {
                 currentSesionId = sesionId;
@@ -584,7 +586,10 @@
                 document.getElementById('cerrarSesionBtn').onclick = async () => {
                     const cantidad = document.getElementById('cantidadRealizada').value;
                     const comentario = document.getElementById('comentarioCierre').value;
-                    await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}cerrar-sesion`, { method: 'POST', body: JSON.stringify({ sesion_id: sesionId, cantidad_realizada: cantidad, comentario }) });
+                    await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}cerrar-sesion`, {
+                        method: 'POST',
+                        body: JSON.stringify({ sesion_id: sesionId, cantidad_realizada: cantidad, comentario })
+                    });
                     modal.hide();
                     cargarMisIntervenciones();
                     showNotification('Sesión cerrada');
@@ -663,11 +668,12 @@
                 showNotification('Foto subida correctamente');
                 modalCamera.hide();
                 // Recargar el detalle para mostrar la nueva foto
-                document.getElementById('modalDetalleIntervencion').querySelector('.btn-close').click();
-                // Volver a abrir el detalle (recargar)
                 const detalleModal = new bootstrap.Modal(document.getElementById('modalDetalleIntervencion'));
                 detalleModal.show();
-                cargarMisIntervenciones(); // para refrescar la lista
+                // Volver a cargar el detalle para actualizar la lista de fotos
+                const intervId = document.querySelector('.ver-detalle')?.dataset.id;
+                if (intervId) await verDetalleTecnico(intervId);
+                cargarMisIntervenciones();
             } catch (err) {
                 showNotification('Error al subir foto', 'error');
             } finally {
