@@ -308,7 +308,7 @@
         if (isAdmin || isSupervisor) {
             cargarActivos();
             cargarIntervenciones();
-            // cargarReporteAvance(); // Descomentar cuando el workflow esté listo
+            cargarReporteAvance();
             cargarSelectActivos();
             cargarSelects();
         }
@@ -412,7 +412,7 @@
     async function cargarUsuarios() {
         let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-usuarios`);
         const tbody = document.getElementById('usuariosTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay usuarios</td></tr>'; return; }
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay usuarios</tr>'; return; }
         tbody.innerHTML = data.map(u => `
             <tr>
                 <td>${u.id}</td>
@@ -454,7 +454,7 @@
     async function cargarActivos() {
         let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-activos`);
         const tbody = document.getElementById('activosTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay activos</td></tr>'; return; }
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay activos</tr>'; return; }
         tbody.innerHTML = data.map(a => `
             <tr>
                 <td>${a.id}</td>
@@ -497,7 +497,7 @@
     async function cargarIntervenciones() {
         let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-intervenciones`);
         const tbody = document.getElementById('intervencionesTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay intervenciones</td></tr>'; return; }
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay intervenciones</tr>'; return; }
         tbody.innerHTML = data.map(i => `
             <tr>
                 <td>${i.id}</td>
@@ -567,7 +567,7 @@
     async function cargarReporteAvance() {
         let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}reporte-avance`);
         const tbody = document.getElementById('reporteTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay datos</td></tr>'; return; }
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay datos</tr>'; return; }
         tbody.innerHTML = data.map(r => `
             <tr>
                 <td>${r.activo || ''}</td>
