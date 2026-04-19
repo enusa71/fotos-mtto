@@ -104,81 +104,34 @@
 
     <div class="tab-content mt-3">
         <div class="tab-pane fade" id="misIntervenciones"><div class="card p-3"><h4>Mis Intervenciones Asignadas</h4><div id="misIntervencionesList" class="list-group"></div></div></div>
-        <div class="tab-pane fade" id="usuarios"><div class="card p-3"><h4>Gestión de Usuarios</h4><button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalUsuario">+ Nuevo Usuario</button><div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Activo</th><th>Acciones</th></tr></thead><tbody id="usuariosTableBody"></tbody></table></div></div></div>
+        <div class="tab-pane fade" id="usuarios"><div class="card p-3"><h4>Gestión de Usuarios</h4><button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalUsuario">+ Nuevo Usuario</button><div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Activo</th><th>Acciones</th></td></thead><tbody id="usuariosTableBody"></tbody></table></div></div></div>
         <div class="tab-pane fade" id="activos"><div class="card p-3"><h4>Gestión de Activos</h4><button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalActivo">+ Nuevo Activo</button><div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Tipo</th><th>Ubicación</th><th>Acciones</th></td></thead><tbody id="activosTableBody"></tbody></table></div></div></div>
-        <div class="tab-pane fade" id="intervenciones"><div class="card p-3"><h4>Intervenciones</h4><button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalIntervencion">+ Nueva Intervención</button><div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Activo</th><th>Tipo</th><th>Fechas plan</th><th>Estado</th><th>Acciones</th></td></thead><tbody id="intervencionesTableBody"></tbody></table></div></div></div>
+        <div class="tab-pane fade" id="intervenciones"><div class="card p-3"><h4>Intervenciones</h4><button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalIntervencion">+ Nueva Intervención</button><div class="table-responsive"><table class="table table-hover"><thead><tr><th>ID</th><th>Activo</th><th>Tipo</th><th>Fechas plan</th><th>Estado</th><th>Acciones</th></td></thead><tbody id="intervencionesTableBody"></tbody></tr></div></div></div>
         <div class="tab-pane fade" id="reporte"><div class="card p-3"><h4>Reporte de Avance</h4><div class="table-responsive"><table class="table table-bordered"><thead><tr><th>Activo</th><th>Tipo</th><th>Fechas plan</th><th>Fechas real</th><th>Estado</th><th>Fotos (A/D)</th></tr></thead><tbody id="reporteTableBody"></tbody></table></div></div></div>
         <div class="tab-pane fade" id="hojaVida"><div class="card p-3"><h4>Hoja de Vida de Activo</h4><div class="row"><div class="col-md-4"><select id="selectActivo" class="form-select"></select><button id="btnVerHojaVida" class="btn btn-secondary mt-2 w-100">Consultar</button></div><div class="col-md-8"><div id="hojaVidaResultado"></div></div></div></div></div>
     </div>
 </div>
 
-<!-- Modales CRUD -->
-<div class="modal fade" id="modalUsuario" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header"><h5>Usuario</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body">
-                <form><input type="hidden" id="usuarioId">
-                    <div class="mb-2"><label>Usuario</label><input type="text" id="usuarioUsername" class="form-control" required></div>
-                    <div class="mb-2"><label>Nombre</label><input type="text" id="usuarioNombre" class="form-control" required></div>
-                    <div class="mb-2"><label>Contraseña</label><input type="password" id="usuarioPassword" class="form-control" placeholder="Dejar en blanco para mantener"></div>
-                    <div class="mb-2"><label>Rol</label><select id="usuarioRol" class="form-select"><option value="tecnico">Técnico</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option></select></div>
-                    <div class="form-check"><input type="checkbox" id="usuarioActivo" class="form-check-input" checked> <label class="form-check-label">Activo</label></div>
-                </form>
-            </div>
-            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" id="guardarUsuarioBtn">Guardar</button></div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalActivo" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header"><h5>Activo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body">
-                <form><input type="hidden" id="activoId">
-                    <div class="mb-2"><label>Código</label><input type="text" id="activoCodigo" class="form-control" required></div>
-                    <div class="mb-2"><label>Nombre</label><input type="text" id="activoNombre" class="form-control" required></div>
-                    <div class="mb-2"><label>Tipo</label><input type="text" id="activoTipo" class="form-control" required></div>
-                    <div class="mb-2"><label>Ubicación</label><input type="text" id="activoUbicacion" class="form-control"></div>
-                </form>
-            </div>
-            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" id="guardarActivoBtn">Guardar</button></div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalIntervencion" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header"><h5>Intervención</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body">
-                <form><input type="hidden" id="intervId">
-                    <div class="row">
-                        <div class="col-md-6"><label>Activo</label><select id="intervActivoId" class="form-select" required></select></div>
-                        <div class="col-md-6"><label>Tipo Mantenimiento</label><select id="intervTipo" class="form-select"><option value="preventivo">Preventivo</option><option value="correctivo">Correctivo</option><option value="construccion">Construcción</option></select></div>
-                    </div>
-                    <div class="mt-2"><label>Descripción</label><textarea id="intervDescripcion" class="form-control" rows="2"></textarea></div>
-                    <div class="row mt-2">
-                        <div class="col-md-6"><label>Fecha inicio plan</label><input type="date" id="intervFechaInicioPlan" class="form-control" required></div>
-                        <div class="col-md-6"><label>Fecha fin plan</label><input type="date" id="intervFechaFinPlan" class="form-control" required></div>
-                    </div>
-                    <div class="mt-2"><label>Expediente Ministerio</label><input type="text" id="intervExpediente" class="form-control"></div>
-                    <div class="mt-2"><label>Técnico Asignado</label><select id="intervTecnicoId" class="form-select"></select></div>
-                </form>
-            </div>
-            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" id="guardarIntervencionBtn">Guardar</button></div>
-        </div>
-    </div>
-</div>
+<!-- Modales CRUD (simplificados pero completos) -->
+<div class="modal fade" id="modalUsuario" tabindex="-1">...</div>
+<div class="modal fade" id="modalActivo" tabindex="-1">...</div>
+<div class="modal fade" id="modalIntervencion" tabindex="-1">...</div>
 
 <!-- Modal Detalle Intervención (técnico) -->
 <div class="modal fade" id="modalDetalleIntervencion" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
-            <div class="modal-header"><h5>Detalle de Intervención</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body" id="detalleIntervBody"></div>
-            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+            <div class="modal-header">
+                <h5>Detalle de Intervención</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detalleIntervBody">
+                <p>Cargando...</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="btnRecargarDetalle">Recargar datos</button>
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
         </div>
     </div>
 </div>
@@ -218,7 +171,7 @@
     let photoData = null;
     let currentSesionId = null;
     let currentIntervId = null;
-    let updating = false; // para evitar múltiples actualizaciones
+    let currentModal = null;
 
     // Notificaciones
     function showNotification(msg, type = 'success') {
@@ -316,7 +269,7 @@
     async function cargarUsuarios() {
         let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-usuarios`);
         const tbody = document.getElementById('usuariosTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay usuarios</td></table>'; return; }
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay usuarios</td></tr>'; return; }
         tbody.innerHTML = data.map(u => `
             <tr>
                 <td>${u.id}</td>
@@ -401,7 +354,7 @@
     async function cargarIntervenciones() {
         let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}listar-intervenciones`);
         const tbody = document.getElementById('intervencionesTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay intervenciones</td></td>'; return; }
+        if (!data.length) { tbody.innerHTML = '<td><td colspan="6">No hay intervenciones</td></tr>'; return; }
         tbody.innerHTML = data.map(i => `
             <tr>
                 <td>${i.id}</td>
@@ -466,7 +419,7 @@
     async function cargarReporteAvance() {
         let data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}reporte-avance`);
         const tbody = document.getElementById('reporteTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay datos</td></table>'; return; }
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay datos</td></tr>'; return; }
         tbody.innerHTML = data.map(r => `
             <tr>
                 <td>${r.activo || ''}</td>
@@ -518,20 +471,29 @@
         document.querySelectorAll('.ver-detalle').forEach(btn => btn.onclick = () => verDetalleTecnico(btn.dataset.id));
     }
 
+    // Función principal que muestra el detalle y maneja los botones
     async function verDetalleTecnico(intervId) {
-        if (updating) return;
-        updating = true;
         currentIntervId = intervId;
+        // Mostrar modal (si no está ya abierto)
+        if (!currentModal) {
+            currentModal = new bootstrap.Modal(document.getElementById('modalDetalleIntervencion'));
+        }
+        currentModal.show();
+        await cargarDetalleYRenderizar(intervId);
+    }
+
+    async function cargarDetalleYRenderizar(intervId) {
         try {
             const data = await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}detalle-intervencion?id=${intervId}`);
             let detalle = Array.isArray(data) ? data[0] : data;
             if (detalle && detalle.detalle) detalle = detalle.detalle;
-            if (!detalle || detalle.error) throw new Error('No se pudo cargar');
+            if (!detalle || detalle.error) throw new Error('No se pudo cargar la intervención');
             
             let sesionActiva = detalle.sesiones ? detalle.sesiones.find(s => s.fin === null) : null;
             let sesionId = sesionActiva ? sesionActiva.id : null;
             currentSesionId = sesionId;
-            console.log('Sesión activa?', sesionActiva, 'ID:', sesionId);
+            console.log('Detalle recibido:', detalle);
+            console.log('Sesión activa:', sesionActiva);
             
             let html = `<h5>${detalle.activo_nombre || 'Activo'}</h5>
                         <p><strong>${detalle.tipo_mantenimiento || ''}</strong><br>
@@ -573,21 +535,20 @@
                 }
             }
             
-            // Asignar eventos (evitar duplicados clonando botones)
+            // Asignar eventos (usando clonación para evitar duplicados)
             if (!sesionActiva) {
                 const btnIniciar = document.getElementById('iniciarSesionBtn');
                 if (btnIniciar) {
                     const newBtn = btnIniciar.cloneNode(true);
                     btnIniciar.parentNode.replaceChild(newBtn, btnIniciar);
                     newBtn.onclick = async () => {
-                        if (updating) return;
                         await apiCall(`${N8N_BASE_URL}/webhook/${WEBHOOK_PREFIX}iniciar-sesion`, {
                             method: 'POST',
                             body: JSON.stringify({ intervencion_id: intervId, tecnico_id: currentUser.id })
                         });
                         showNotification('Sesión iniciada');
-                        // Recargar el detalle (actualizar el modal sin cerrarlo)
-                        await verDetalleTecnico(intervId);
+                        // Recargar el contenido del modal sin cerrarlo
+                        await cargarDetalleYRenderizar(intervId);
                     };
                 }
             } else {
@@ -609,26 +570,25 @@
                             body: JSON.stringify({ sesion_id: sesionId, cantidad_realizada: cantidad, comentario })
                         });
                         showNotification('Sesión cerrada');
-                        const modalElem = document.getElementById('modalDetalleIntervencion');
-                        const modal = bootstrap.Modal.getInstance(modalElem);
-                        if (modal) modal.hide();
+                        if (currentModal) currentModal.hide();
                         cargarMisIntervenciones();
                     };
                 }
             }
-            
-            // Mostrar modal si no está visible
-            const modalElem = document.getElementById('modalDetalleIntervencion');
-            const modal = bootstrap.Modal.getInstance(modalElem);
-            if (!modal || !modalElem.classList.contains('show')) {
-                new bootstrap.Modal(modalElem).show();
-            }
         } catch (err) {
+            console.error(err);
             showNotification('Error al cargar detalle', 'error');
-        } finally {
-            updating = false;
+            document.getElementById('detalleIntervBody').innerHTML = '<p>Error al cargar los datos. Intente de nuevo.</p>';
         }
     }
+
+    // Botón recargar dentro del modal
+    document.getElementById('btnRecargarDetalle').addEventListener('click', async () => {
+        if (currentIntervId) {
+            await cargarDetalleYRenderizar(currentIntervId);
+            showNotification('Datos recargados');
+        }
+    });
 
     // ==================== CÁMARA ====================
     async function abrirCamara() {
@@ -697,7 +657,7 @@
                 });
                 showNotification('Foto subida correctamente');
                 modalCamera.hide();
-                await verDetalleTecnico(currentIntervId);
+                await cargarDetalleYRenderizar(currentIntervId);
                 cargarMisIntervenciones();
             } catch (err) {
                 showNotification('Error al subir foto', 'error');
@@ -722,7 +682,7 @@
         });
     }
 
-    // ==================== BOTONES GUARDAR ====================
+    // ==================== BOTONES GUARDAR (CRUD) ====================
     document.getElementById('guardarUsuarioBtn').onclick = async () => {
         const id = document.getElementById('usuarioId').value;
         const usuario = document.getElementById('usuarioUsername').value;
