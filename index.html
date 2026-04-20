@@ -85,7 +85,7 @@
         <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalUsuario">+ Nuevo Usuario</button>
         <div class="table-responsive">
             <table class="table table-hover">
-                <thead><tr><th>ID</th><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Activo</th><th>Acciones</th></tr></thead>
+                <thead><tr><th>ID</th><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Activo</th><th>Acciones</th></thead>
                 <tbody id="usuariosTableBody"></tbody>
             </table>
         </div>
@@ -97,7 +97,7 @@
         <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalActivo">+ Nuevo Activo</button>
         <div class="table-responsive">
             <table class="table table-hover">
-                <thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Tipo</th><th>Ubicación</th><th>Acciones</th></tr></thead>
+                <thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Tipo</th><th>Ubicación</th><th>Acciones</th></thead>
                 <tbody id="activosTableBody"></tbody>
             </table>
         </div>
@@ -269,8 +269,7 @@
         location.reload();
     });
 
-    // ==================== LIMPIAR MODALES AL CREAR NUEVO ====================
-    // Limpiar modal de usuario cuando se abre para nuevo
+    // ==================== LIMPIAR MODALES ====================
     document.querySelector('button[data-bs-target="#modalUsuario"]').addEventListener('click', () => {
         document.getElementById('usuarioId').value = '';
         document.getElementById('usuarioUsername').value = '';
@@ -280,7 +279,6 @@
         document.getElementById('usuarioActivo').checked = true;
     });
 
-    // Limpiar modal de activo cuando se abre para nuevo
     document.querySelector('button[data-bs-target="#modalActivo"]').addEventListener('click', () => {
         document.getElementById('activoId').value = '';
         document.getElementById('activoCodigo').value = '';
@@ -307,8 +305,8 @@
                 <td>
                     <button class="btn btn-sm btn-warning editar-usuario" data-id="${u.id}">Editar</button>
                     <button class="btn btn-sm btn-danger eliminar-usuario" data-id="${u.id}">Eliminar</button>
-                 </td>
-             </tr>
+                  </td>
+              </tr>
         `).join('');
         document.querySelectorAll('.editar-usuario').forEach(btn => btn.onclick = () => editarUsuario(btn.dataset.id));
         document.querySelectorAll('.eliminar-usuario').forEach(btn => btn.onclick = () => eliminarUsuario(btn.dataset.id));
@@ -356,12 +354,12 @@
         cargarUsuarios();
     };
 
-    // ==================== CRUD ACTIVOS ====================
+    // ==================== CRUD ACTIVOS (con admin_id) ====================
     async function cargarActivos() {
         const data = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
         const tbody = document.getElementById('activosTableBody');
         if (!data.length) {
-            tbody.innerHTML = '<tr><td colspan="6">No hay activos registrados\n</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6">No hay activos registrados</td></tr>';
             return;
         }
         tbody.innerHTML = data.map(a => `
@@ -374,8 +372,8 @@
                 <td>
                     <button class="btn btn-sm btn-warning editar-activo" data-id="${a.id}">Editar</button>
                     <button class="btn btn-sm btn-danger eliminar-activo" data-id="${a.id}">Eliminar</button>
-                  </td>
-              </tr>
+                   </td>
+               </tr>
         `).join('');
         document.querySelectorAll('.editar-activo').forEach(btn => btn.onclick = () => editarActivo(btn.dataset.id));
         document.querySelectorAll('.eliminar-activo').forEach(btn => btn.onclick = () => eliminarActivo(btn.dataset.id));
@@ -396,7 +394,10 @@
 
     async function eliminarActivo(id) {
         if (!confirm('¿Eliminar este activo? Se perderán las fotos asociadas.')) return;
-        await apiCall(WEBHOOK_ELIMINAR_ACTIVO, { method: 'DELETE', body: JSON.stringify({ id }) });
+        await apiCall(WEBHOOK_ELIMINAR_ACTIVO, {
+            method: 'DELETE',
+            body: JSON.stringify({ id, admin_id: currentUser.id })
+        });
         showNotification('Activo eliminado');
         cargarActivos();
         cargarActivosTecnico();
@@ -405,6 +406,7 @@
     document.getElementById('guardarActivoBtn').onclick = async () => {
         const id = document.getElementById('activoId').value;
         const data = {
+            admin_id: currentUser.id,   // ← CLAVE: ahora se envía el usuario autenticado
             codigo: document.getElementById('activoCodigo').value,
             nombre: document.getElementById('activoNombre').value,
             tipo: document.getElementById('activoTipo').value,
@@ -419,7 +421,7 @@
         cargarActivosTecnico();
     };
 
-    // ==================== TÉCNICO: toma de fotos ====================
+    // ==================== TÉCNICO ====================
     async function cargarActivosTecnico() {
         const data = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
         const select = document.getElementById('activoSelect');
