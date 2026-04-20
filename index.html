@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Evidencias - Mantenimiento</title>
+    <title>Mantenimiento Zona Franca</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body { background-color: #f0f2f5; padding: 20px; }
         .card { border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .login-container { max-width: 400px; margin: 100px auto; }
+        .dashboard { display: none; }
         .camera-container {
             background: #000;
             border-radius: 16px;
@@ -17,7 +20,6 @@
             margin: 0 auto;
         }
         video, canvas { width: 100%; height: auto; display: block; }
-        .zoom-slider { width: 80%; margin: 10px auto; }
         .preview-img { max-width: 100%; border-radius: 12px; margin-top: 10px; }
         .btn-group-custom { margin-top: 15px; display: flex; gap: 10px; justify-content: center; }
         .loading {
@@ -33,198 +35,359 @@
             align-items: center;
             color: white;
         }
+        .table-responsive { overflow-x: auto; }
+        .btn-sm { margin: 2px; }
+        .custom-toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 40px;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            font-weight: 500;
+        }
+        .custom-toast.error { background: #dc3545; }
+        .custom-toast.warning { background: #ffc107; color: #212529; }
     </style>
 </head>
 <body>
 
-<div class="loading" id="loading">
-    <div class="spinner-border text-light" role="status"></div>
+<div class="loading" id="loading"><div class="spinner-border text-light"></div></div>
+
+<!-- Login -->
+<div id="loginContainer" class="container login-container">
+    <div class="card p-4">
+        <h3 class="text-center mb-4"><i class="fas fa-hard-hat"></i> Mantenimiento Zona Franca</h3>
+        <form id="loginForm">
+            <div class="mb-3"><label>Usuario</label><input type="text" id="usuario" class="form-control" required></div>
+            <div class="mb-3"><label>Contraseña</label><input type="password" id="password" class="form-control" required></div>
+            <button type="submit" class="btn btn-primary w-100">Ingresar</button>
+        </form>
+        <div id="loginError" class="alert alert-danger mt-3 d-none"></div>
+    </div>
 </div>
 
-<div class="container">
-    <div class="card p-4">
-        <h2 class="text-center mb-4">📸 Registro de Evidencias</h2>
+<!-- Dashboard -->
+<div id="dashboard" class="dashboard container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+        <h2><i class="fas fa-tools"></i> Sistema de Mantenimiento</h2>
+        <div><span id="userName" class="badge bg-secondary me-2"></span><button id="logoutBtn" class="btn btn-outline-danger btn-sm">Cerrar sesión</button></div>
+    </div>
+
+    <!-- Panel Admin (CRUD activos) -->
+    <div id="adminPanel" class="card p-3 mb-4" style="display:none;">
+        <h4>Gestión de Activos</h4>
+        <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalActivo">+ Nuevo Activo</button>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Tipo</th><th>Ubicación</th><th>Acciones</th></tr></thead>
+                <tbody id="activosTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Panel Técnico (toma de fotos) -->
+    <div id="tecnicoPanel" class="card p-3" style="display:none;">
+        <h4>Registro de Evidencias</h4>
         <div class="mb-3">
-            <label class="form-label">Seleccione el activo (bodega / equipo)</label>
+            <label>Seleccione el activo (bodega / equipo)</label>
             <select id="activoSelect" class="form-select" required>
                 <option value="">Cargando activos...</option>
             </select>
         </div>
-
         <div class="camera-container">
             <video id="cameraVideo" autoplay playsinline></video>
             <canvas id="cameraCanvas" style="display:none;"></canvas>
         </div>
-        <div class="text-center mt-2">
-            <input type="range" id="zoomSlider" class="zoom-slider" min="1" max="3" step="0.05" value="1">
-            <label>Zoom (acercar/alejar)</label>
-        </div>
-
         <div class="btn-group-custom">
             <button id="btnTakePhoto" class="btn btn-primary btn-lg">📷 Tomar foto</button>
             <button id="btnRetakePhoto" class="btn btn-warning btn-lg" style="display:none;">🔄 Repetir</button>
             <button id="btnAcceptPhoto" class="btn btn-success btn-lg" style="display:none;">✅ Aceptar y subir</button>
         </div>
-
         <div id="previewArea" class="mt-3 text-center" style="display:none;">
             <h5>Vista previa</h5>
             <img id="previewImg" class="preview-img" src="">
         </div>
-
         <div id="messageArea" class="mt-3 alert alert-info d-none"></div>
     </div>
 </div>
 
+<!-- Modal para crear/editar activo -->
+<div class="modal fade" id="modalActivo" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Activo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form id="formActivo">
+                    <input type="hidden" id="activoId">
+                    <div class="mb-2"><label>Código</label><input type="text" id="activoCodigo" class="form-control" required></div>
+                    <div class="mb-2"><label>Nombre</label><input type="text" id="activoNombre" class="form-control" required></div>
+                    <div class="mb-2"><label>Tipo</label><input type="text" id="activoTipo" class="form-control" required></div>
+                    <div class="mb-2"><label>Ubicación</label><input type="text" id="activoUbicacion" class="form-control"></div>
+                </form>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" id="guardarActivoBtn">Guardar</button></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // ==================== CONFIGURACIÓN ====================
-    const N8N_BASE = 'https://api.enusa.org';          // Cambia por tu dominio de n8n
-    const WEBHOOK_LISTAR = `${N8N_BASE}/webhook/listar-activos`;
-    const WEBHOOK_SUBIR = `${N8N_BASE}/webhook/subir-foto`;
-    const TECNICO_ID = 1;   // ID del técnico (puedes cambiarlo después)
+    const N8N_BASE_URL = 'https://api.enusa.org';   // Cambia si tu n8n está en otro dominio
+    const WEBHOOK_LOGIN = `${N8N_BASE_URL}/webhook/login`;
+    const WEBHOOK_LISTAR_ACTIVOS = `${N8N_BASE_URL}/webhook/listar-activos`;
+    const WEBHOOK_CREAR_ACTIVO = `${N8N_BASE_URL}/webhook/crear-activo`;
+    const WEBHOOK_ACTUALIZAR_ACTIVO = `${N8N_BASE_URL}/webhook/actualizar-activo`;
+    const WEBHOOK_ELIMINAR_ACTIVO = `${N8N_BASE_URL}/webhook/eliminar-activo`;
+    const WEBHOOK_SUBIR_FOTO = `${N8N_BASE_URL}/webhook/subir-foto`;
 
+    let currentUser = null;
     let currentStream = null;
-    let currentZoom = 1;
     let photoData = null;
-    let currentActivoId = null;
 
-    // Elementos DOM
-    const video = document.getElementById('cameraVideo');
-    const canvas = document.getElementById('cameraCanvas');
-    const zoomSlider = document.getElementById('zoomSlider');
-    const btnTake = document.getElementById('btnTakePhoto');
-    const btnRetake = document.getElementById('btnRetakePhoto');
-    const btnAccept = document.getElementById('btnAcceptPhoto');
-    const previewArea = document.getElementById('previewArea');
-    const previewImg = document.getElementById('previewImg');
-    const messageDiv = document.getElementById('messageArea');
-    const activoSelect = document.getElementById('activoSelect');
-    const loading = document.getElementById('loading');
+    // Elementos comunes
+    const loadingDiv = document.getElementById('loading');
+    function showLoading() { loadingDiv.style.display = 'flex'; }
+    function hideLoading() { loadingDiv.style.display = 'none'; }
 
-    function showMessage(msg, type = 'success') {
-        messageDiv.className = `alert alert-${type}`;
-        messageDiv.innerHTML = msg;
-        messageDiv.classList.remove('d-none');
-        setTimeout(() => messageDiv.classList.add('d-none'), 4000);
+    function showNotification(msg, type = 'success') {
+        const existing = document.querySelector('.custom-toast');
+        if(existing) existing.remove();
+        const toast = document.createElement('div');
+        toast.className = `custom-toast ${type}`;
+        toast.innerText = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.style.opacity = '1', 10);
+        setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
     }
 
-    // Cargar activos desde n8n (o usar lista local si falla)
-    async function cargarActivos() {
+    async function apiCall(url, options = {}) {
+        showLoading();
         try {
-            const response = await fetch(WEBHOOK_LISTAR);
-            if (!response.ok) throw new Error('Error al cargar activos');
-            const activos = await response.json();
-            if (!activos.length) throw new Error('No hay activos registrados');
-            activoSelect.innerHTML = '<option value="">Seleccione un activo...</option>' +
-                activos.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
+            const resp = await fetch(url, {
+                headers: { 'Content-Type': 'application/json' },
+                ...options
+            });
+            let data = await resp.json();
+            if (Array.isArray(data) && data.length === 1) data = data[0];
+            if (data && data.success === false) throw new Error(data.error || 'Error');
+            if (!resp.ok) throw new Error(data.error || 'Error HTTP');
+            return data;
         } catch (err) {
-            console.error(err);
-            // Fallback: activos de ejemplo (por si el webhook no está listo)
-            const activosEjemplo = [
-                { id: 1, codigo: 'BOD-01', nombre: 'Bodega Central' },
-                { id: 2, codigo: 'BOD-02', nombre: 'Bodega Norte' },
-                { id: 3, codigo: 'AND-01', nombre: 'Andén Sur' },
-                { id: 4, codigo: 'BAS-01', nombre: 'Báscula Principal' },
-                { id: 5, codigo: 'TECH-01', nombre: 'Techo Administrativo' }
-            ];
-            activoSelect.innerHTML = '<option value="">Seleccione un activo...</option>' +
-                activosEjemplo.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
-            showMessage('Usando activos de ejemplo (conexión a listar-activos falló)', 'warning');
+            showNotification('Error: ' + err.message, 'error');
+            throw err;
+        } finally {
+            hideLoading();
         }
     }
 
-    // Iniciar cámara trasera
+    // ==================== LOGIN ====================
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const usuario = document.getElementById('usuario').value;
+        const password = document.getElementById('password').value;
+        try {
+            const data = await apiCall(WEBHOOK_LOGIN, {
+                method: 'POST',
+                body: JSON.stringify({ usuario, password })
+            });
+            currentUser = data.user;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            showDashboard();
+        } catch (err) {
+            document.getElementById('loginError').classList.remove('d-none');
+            document.getElementById('loginError').innerText = err.message;
+        }
+    });
+
+    function showDashboard() {
+        document.getElementById('loginContainer').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        document.getElementById('userName').innerHTML = `${currentUser.nombre} (${currentUser.rol})`;
+
+        const isAdmin = currentUser.rol === 'admin';
+        document.getElementById('adminPanel').style.display = isAdmin ? 'block' : 'none';
+        document.getElementById('tecnicoPanel').style.display = isAdmin ? 'none' : 'block';
+
+        if (isAdmin) {
+            cargarActivosAdmin();
+        } else {
+            cargarActivosTecnico();
+            iniciarCamara();
+        }
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.removeItem('currentUser');
+        location.reload();
+    });
+
+    // ==================== ADMIN: CRUD de activos ====================
+    async function cargarActivosAdmin() {
+        const data = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
+        const tbody = document.getElementById('activosTableBody');
+        if (!data.length) {
+            tbody.innerHTML = '<tr><td colspan="6">No hay activos registrados</td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.map(a => `
+            <tr>
+                <td>${a.id}</td>
+                <td>${a.codigo}</td>
+                <td>${a.nombre}</td>
+                <td>${a.tipo}</td>
+                <td>${a.ubicacion || ''}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning editar-activo" data-id="${a.id}">Editar</button>
+                    <button class="btn btn-sm btn-danger eliminar-activo" data-id="${a.id}">Eliminar</button>
+                </td>
+            </tr>
+        `).join('');
+        document.querySelectorAll('.editar-activo').forEach(btn => btn.onclick = () => editarActivo(btn.dataset.id));
+        document.querySelectorAll('.eliminar-activo').forEach(btn => btn.onclick = () => eliminarActivo(btn.dataset.id));
+    }
+
+    async function editarActivo(id) {
+        const activos = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
+        const activo = activos.find(a => a.id == id);
+        if (activo) {
+            document.getElementById('activoId').value = activo.id;
+            document.getElementById('activoCodigo').value = activo.codigo;
+            document.getElementById('activoNombre').value = activo.nombre;
+            document.getElementById('activoTipo').value = activo.tipo;
+            document.getElementById('activoUbicacion').value = activo.ubicacion || '';
+            new bootstrap.Modal(document.getElementById('modalActivo')).show();
+        }
+    }
+
+    async function eliminarActivo(id) {
+        if (!confirm('¿Eliminar este activo? Se perderán las fotos asociadas.')) return;
+        await apiCall(WEBHOOK_ELIMINAR_ACTIVO, {
+            method: 'DELETE',
+            body: JSON.stringify({ id })
+        });
+        showNotification('Activo eliminado');
+        cargarActivosAdmin();
+    }
+
+    document.getElementById('guardarActivoBtn').onclick = async () => {
+        const id = document.getElementById('activoId').value;
+        const data = {
+            codigo: document.getElementById('activoCodigo').value,
+            nombre: document.getElementById('activoNombre').value,
+            tipo: document.getElementById('activoTipo').value,
+            ubicacion: document.getElementById('activoUbicacion').value
+        };
+        if (id) data.id = id;
+        const url = id ? WEBHOOK_ACTUALIZAR_ACTIVO : WEBHOOK_CREAR_ACTIVO;
+        await apiCall(url, { method: 'POST', body: JSON.stringify(data) });
+        showNotification('Activo guardado');
+        bootstrap.Modal.getInstance(document.getElementById('modalActivo')).hide();
+        cargarActivosAdmin();
+    };
+
+    // ==================== TÉCNICO: toma de fotos ====================
+    async function cargarActivosTecnico() {
+        const data = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
+        const select = document.getElementById('activoSelect');
+        if (!data.length) {
+            select.innerHTML = '<option value="">No hay activos disponibles</option>';
+            return;
+        }
+        select.innerHTML = '<option value="">Seleccione un activo...</option>' +
+            data.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
+    }
+
     async function iniciarCamara() {
         if (currentStream) currentStream.getTracks().forEach(track => track.stop());
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
             currentStream = stream;
+            const video = document.getElementById('cameraVideo');
             video.srcObject = stream;
             await video.play();
-            video.style.transform = `scale(${currentZoom})`;
-            // Resetear interfaz
-            btnTake.style.display = 'inline-block';
-            btnRetake.style.display = 'none';
-            btnAccept.style.display = 'none';
-            previewArea.style.display = 'none';
+            // Resetear UI
+            document.getElementById('btnTakePhoto').style.display = 'inline-block';
+            document.getElementById('btnRetakePhoto').style.display = 'none';
+            document.getElementById('btnAcceptPhoto').style.display = 'none';
+            document.getElementById('previewArea').style.display = 'none';
             photoData = null;
         } catch (err) {
-            showMessage('No se pudo acceder a la cámara. Verifique permisos.', 'danger');
-            console.error(err);
+            showNotification('No se pudo acceder a la cámara', 'error');
         }
     }
 
-    // Zoom dinámico
-    zoomSlider.oninput = (e) => {
-        currentZoom = parseFloat(e.target.value);
-        video.style.transform = `scale(${currentZoom})`;
-    };
-
     // Tomar foto
-    btnTake.onclick = () => {
+    document.getElementById('btnTakePhoto').onclick = () => {
+        const video = document.getElementById('cameraVideo');
+        const canvas = document.getElementById('cameraCanvas');
         const context = canvas.getContext('2d');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         photoData = canvas.toDataURL('image/jpeg', 0.8);
-        previewImg.src = photoData;
-        previewArea.style.display = 'block';
-        btnTake.style.display = 'none';
-        btnRetake.style.display = 'inline-block';
-        btnAccept.style.display = 'inline-block';
+        document.getElementById('previewImg').src = photoData;
+        document.getElementById('previewArea').style.display = 'block';
+        document.getElementById('btnTakePhoto').style.display = 'none';
+        document.getElementById('btnRetakePhoto').style.display = 'inline-block';
+        document.getElementById('btnAcceptPhoto').style.display = 'inline-block';
     };
 
     // Repetir foto
-    btnRetake.onclick = () => {
+    document.getElementById('btnRetakePhoto').onclick = () => {
         photoData = null;
-        previewArea.style.display = 'none';
-        btnTake.style.display = 'inline-block';
-        btnRetake.style.display = 'none';
-        btnAccept.style.display = 'none';
+        document.getElementById('previewArea').style.display = 'none';
+        document.getElementById('btnTakePhoto').style.display = 'inline-block';
+        document.getElementById('btnRetakePhoto').style.display = 'none';
+        document.getElementById('btnAcceptPhoto').style.display = 'none';
     };
 
     // Subir foto
-    btnAccept.onclick = async () => {
+    document.getElementById('btnAcceptPhoto').onclick = async () => {
         if (!photoData) return;
-        const activoId = activoSelect.value;
+        const activoId = document.getElementById('activoSelect').value;
         if (!activoId) {
-            showMessage('Debe seleccionar un activo', 'warning');
+            showNotification('Debe seleccionar un activo', 'warning');
             return;
         }
-        loading.style.display = 'flex';
         try {
-            const response = await fetch(WEBHOOK_SUBIR, {
+            await apiCall(WEBHOOK_SUBIR_FOTO, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     activo_id: parseInt(activoId),
-                    tecnico_id: TECNICO_ID,
+                    tecnico_id: currentUser.id,
                     foto_base64: photoData
                 })
             });
-            const result = await response.json();
-            if (result.success) {
-                showMessage('Foto guardada correctamente', 'success');
-                await iniciarCamara();   // Reiniciar cámara
-                activoSelect.value = ''; // Limpiar selección
-                photoData = null;
-                previewArea.style.display = 'none';
-                btnTake.style.display = 'inline-block';
-                btnRetake.style.display = 'none';
-                btnAccept.style.display = 'none';
-            } else {
-                throw new Error(result.error || 'Error al guardar');
-            }
+            showNotification('Foto guardada correctamente');
+            // Reiniciar cámara
+            await iniciarCamara();
+            document.getElementById('activoSelect').value = '';
+            photoData = null;
+            document.getElementById('previewArea').style.display = 'none';
+            document.getElementById('btnTakePhoto').style.display = 'inline-block';
+            document.getElementById('btnRetakePhoto').style.display = 'none';
+            document.getElementById('btnAcceptPhoto').style.display = 'none';
         } catch (err) {
-            showMessage('Error al subir la foto: ' + err.message, 'danger');
-        } finally {
-            loading.style.display = 'none';
+            // El mensaje ya se muestra en apiCall
         }
     };
 
-    // Inicializar
-    (async function init() {
-        await cargarActivos();
-        await iniciarCamara();
+    // Inicialización
+    (function init() {
+        const stored = localStorage.getItem('currentUser');
+        if (stored) {
+            try {
+                currentUser = JSON.parse(stored);
+                showDashboard();
+            } catch(e) {}
+        }
     })();
 </script>
 </body>
