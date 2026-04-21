@@ -20,7 +20,6 @@
             margin: 0 auto;
         }
         video, canvas { width: 100%; height: auto; display: block; }
-        .preview-img { max-width: 100%; border-radius: 12px; margin-top: 10px; }
         .btn-group-custom { margin-top: 15px; display: flex; gap: 10px; justify-content: center; }
         .loading {
             display: none;
@@ -180,7 +179,7 @@
     </div>
 </div>
 
-<!-- Modal Usuario -->
+<!-- Modales (igual que antes) -->
 <div class="modal fade" id="modalUsuario" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -200,7 +199,6 @@
     </div>
 </div>
 
-<!-- Modal Activo -->
 <div class="modal fade" id="modalActivo" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -219,7 +217,7 @@
     </div>
 </div>
 
-<!-- Modal de confirmación personalizado (para eliminar) -->
+<!-- Modal de confirmación -->
 <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -227,9 +225,7 @@
                 <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Confirmar eliminación</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="confirmModalMessage">
-                ¿Estás seguro?
-            </div>
+            <div class="modal-body" id="confirmModalMessage">¿Estás seguro?</div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <button type="button" class="btn btn-danger" id="confirmModalOkBtn">Eliminar</button>
@@ -257,7 +253,7 @@
     let currentUser = null;
     let currentStream = null;
     let photoData = null;
-    let fotosTomadas = [];  // Array para múltiples fotos
+    let fotosTomadas = [];
 
     // Helpers
     const loadingDiv = document.getElementById('loading');
@@ -283,7 +279,9 @@
                 ...options
             });
             let data = await resp.json();
-            if (Array.isArray(data) && data.length === 1) data = data[0];
+            // Si la respuesta es un array directo, lo devolvemos tal cual
+            if (Array.isArray(data)) return data;
+            // Si tiene success false, lanzar error
             if (data && data.success === false) throw new Error(data.error || 'Error');
             if (!resp.ok) throw new Error(data.error || 'Error HTTP');
             return data;
@@ -295,7 +293,7 @@
         }
     }
 
-    // Modal de confirmación personalizado
+    // Modal de confirmación
     function showConfirmDialog(message) {
         return new Promise((resolve) => {
             const modalEl = document.getElementById('confirmModal');
@@ -303,16 +301,8 @@
             const okBtn = document.getElementById('confirmModalOkBtn');
             modalMessage.innerText = message;
             const modal = new bootstrap.Modal(modalEl);
-            const onOk = () => {
-                modal.hide();
-                cleanup();
-                resolve(true);
-            };
-            const onCancel = () => {
-                modal.hide();
-                cleanup();
-                resolve(false);
-            };
+            const onOk = () => { modal.hide(); cleanup(); resolve(true); };
+            const onCancel = () => { modal.hide(); cleanup(); resolve(false); };
             const cleanup = () => {
                 okBtn.removeEventListener('click', onOk);
                 modalEl.removeEventListener('hidden.bs.modal', onCancel);
@@ -363,8 +353,8 @@
             managementTabs.style.display = 'none';
             tecnicoPanel.style.display = 'block';
             cargarActivosTecnico();
-            cargarTiposMantenimiento();  // Cargar tipos de mantenimiento
-            iniciarCamara();
+            cargarTiposMantenimiento().catch(err => console.error("Error cargando tipos:", err));
+            iniciarCamara(); // Siempre intentar iniciar cámara
         }
     }
 
@@ -373,49 +363,19 @@
         location.reload();
     });
 
-    // ==================== LIMPIAR MODALES ====================
-    document.querySelector('button[data-bs-target="#modalUsuario"]').addEventListener('click', () => {
-        document.getElementById('usuarioId').value = '';
-        document.getElementById('usuarioUsername').value = '';
-        document.getElementById('usuarioNombre').value = '';
-        document.getElementById('usuarioPassword').value = '';
-        document.getElementById('usuarioRol').value = 'tecnico';
-        document.getElementById('usuarioActivo').checked = true;
-    });
-
-    document.querySelector('button[data-bs-target="#modalActivo"]').addEventListener('click', () => {
-        document.getElementById('activoId').value = '';
-        document.getElementById('activoCodigo').value = '';
-        document.getElementById('activoNombre').value = '';
-        document.getElementById('activoTipo').value = '';
-        document.getElementById('activoUbicacion').value = '';
-    });
-
-    // ==================== CRUD USUARIOS ====================
+    // ==================== CRUD USUARIOS (resumido, igual que antes) ====================
     async function cargarUsuarios() {
         const data = await apiCall(WEBHOOK_LISTAR_USUARIOS);
         const tbody = document.getElementById('usuariosTableBody');
-        if (!data.length) {
-            tbody.innerHTML = '<tr><td colspan="6">No hay usuarios registrados</td></tr>';
-            return;
-        }
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay usuarios registrados</td></tr>'; return; }
         tbody.innerHTML = data.map(u => `
-            <tr>
-                <td>${u.id}</td>
-                <td>${u.usuario}</td>
-                <td>${u.nombre}</td>
-                <td>${u.rol}</td>
-                <td>${u.activo ? 'Sí' : 'No'}</td>
-                <td>
-                    <button class="btn btn-sm btn-warning editar-usuario" data-id="${u.id}">Editar</button>
-                    <button class="btn btn-sm btn-danger eliminar-usuario" data-id="${u.id}">Eliminar</button>
-                </td>
-            </tr>
+            <tr><td>${u.id}</td><td>${u.usuario}</td><td>${u.nombre}</td><td>${u.rol}</td><td>${u.activo ? 'Sí' : 'No'}</td>
+            <td><button class="btn btn-sm btn-warning editar-usuario" data-id="${u.id}">Editar</button>
+            <button class="btn btn-sm btn-danger eliminar-usuario" data-id="${u.id}">Eliminar</button></td></tr>
         `).join('');
         document.querySelectorAll('.editar-usuario').forEach(btn => btn.onclick = () => editarUsuario(btn.dataset.id));
         document.querySelectorAll('.eliminar-usuario').forEach(btn => btn.onclick = () => eliminarUsuario(btn.dataset.id));
     }
-
     async function editarUsuario(id) {
         const users = await apiCall(WEBHOOK_LISTAR_USUARIOS);
         const user = users.find(u => u.id == id);
@@ -429,18 +389,12 @@
             new bootstrap.Modal(document.getElementById('modalUsuario')).show();
         }
     }
-
     async function eliminarUsuario(id) {
-        const confirmado = await showConfirmDialog('¿Eliminar este usuario? Esta acción no se puede deshacer.');
-        if (!confirmado) return;
-        await apiCall(WEBHOOK_ELIMINAR_USUARIO, {
-            method: 'DELETE',
-            body: JSON.stringify({ id, admin_id: currentUser.id })
-        });
+        if (!await showConfirmDialog('¿Eliminar este usuario? Esta acción no se puede deshacer.')) return;
+        await apiCall(WEBHOOK_ELIMINAR_USUARIO, { method: 'DELETE', body: JSON.stringify({ id, admin_id: currentUser.id }) });
         showNotification('Usuario eliminado');
         cargarUsuarios();
     }
-
     document.getElementById('guardarUsuarioBtn').onclick = async () => {
         const id = document.getElementById('usuarioId').value;
         const usuario = document.getElementById('usuarioUsername').value;
@@ -463,27 +417,15 @@
     async function cargarActivos() {
         const data = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
         const tbody = document.getElementById('activosTableBody');
-        if (!data.length) {
-            tbody.innerHTML = '<tr><td colspan="6">No hay activos registrados</td></tr>';
-            return;
-        }
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay activos registrados</td></tr>'; return; }
         tbody.innerHTML = data.map(a => `
-            <tr>
-                <td>${a.id}</td>
-                <td>${a.codigo}</td>
-                <td>${a.nombre}</td>
-                <td>${a.tipo}</td>
-                <td>${a.ubicacion || ''}</td>
-                <td>
-                    <button class="btn btn-sm btn-warning editar-activo" data-id="${a.id}">Editar</button>
-                    <button class="btn btn-sm btn-danger eliminar-activo" data-id="${a.id}">Eliminar</button>
-                </td>
-            </tr>
+            <tr><td>${a.id}</td><td>${a.codigo}</td><td>${a.nombre}</td><td>${a.tipo}</td><td>${a.ubicacion || ''}</td>
+            <td><button class="btn btn-sm btn-warning editar-activo" data-id="${a.id}">Editar</button>
+            <button class="btn btn-sm btn-danger eliminar-activo" data-id="${a.id}">Eliminar</button></td></tr>
         `).join('');
         document.querySelectorAll('.editar-activo').forEach(btn => btn.onclick = () => editarActivo(btn.dataset.id));
         document.querySelectorAll('.eliminar-activo').forEach(btn => btn.onclick = () => eliminarActivo(btn.dataset.id));
     }
-
     async function editarActivo(id) {
         const activos = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
         const activo = activos.find(a => a.id == id);
@@ -496,28 +438,16 @@
             new bootstrap.Modal(document.getElementById('modalActivo')).show();
         }
     }
-
     async function eliminarActivo(id) {
-        const confirmado = await showConfirmDialog('¿Eliminar este activo? Se perderán las fotos asociadas.');
-        if (!confirmado) return;
-        await apiCall(WEBHOOK_ELIMINAR_ACTIVO, {
-            method: 'DELETE',
-            body: JSON.stringify({ id, admin_id: currentUser.id })
-        });
+        if (!await showConfirmDialog('¿Eliminar este activo? Se perderán las fotos asociadas.')) return;
+        await apiCall(WEBHOOK_ELIMINAR_ACTIVO, { method: 'DELETE', body: JSON.stringify({ id, admin_id: currentUser.id }) });
         showNotification('Activo eliminado');
         cargarActivos();
         cargarActivosTecnico();
     }
-
     document.getElementById('guardarActivoBtn').onclick = async () => {
         const id = document.getElementById('activoId').value;
-        const data = {
-            admin_id: currentUser.id,
-            codigo: document.getElementById('activoCodigo').value,
-            nombre: document.getElementById('activoNombre').value,
-            tipo: document.getElementById('activoTipo').value,
-            ubicacion: document.getElementById('activoUbicacion').value
-        };
+        const data = { admin_id: currentUser.id, codigo: document.getElementById('activoCodigo').value, nombre: document.getElementById('activoNombre').value, tipo: document.getElementById('activoTipo').value, ubicacion: document.getElementById('activoUbicacion').value };
         if (id) data.id = id;
         const url = id ? WEBHOOK_ACTUALIZAR_ACTIVO : WEBHOOK_CREAR_ACTIVO;
         await apiCall(url, { method: 'POST', body: JSON.stringify(data) });
@@ -527,31 +457,26 @@
         cargarActivosTecnico();
     };
 
-    // ==================== TÉCNICO: MÚLTIPLES FOTOS Y MANTENIMIENTO ====================
+    // ==================== TÉCNICO ====================
     async function cargarActivosTecnico() {
         const data = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
         const select = document.getElementById('activoSelect');
-        if (!data.length) {
-            select.innerHTML = '<option value="">No hay activos disponibles</option>';
-            return;
-        }
-        select.innerHTML = '<option value="">Seleccione un activo...</option>' +
-            data.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
+        if (!data.length) { select.innerHTML = '<option value="">No hay activos disponibles</option>'; return; }
+        select.innerHTML = '<option value="">Seleccione un activo...</option>' + data.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
     }
 
     async function cargarTiposMantenimiento() {
+        const select = document.getElementById('tipoMantenimientoSelect');
         try {
             const data = await apiCall(WEBHOOK_LISTAR_TIPOS_MANTENIMIENTO);
-            const select = document.getElementById('tipoMantenimientoSelect');
-            if (!data.length) {
-                select.innerHTML = '<option value="">No hay tipos de mantenimiento</option>';
+            if (!data || !data.length) {
+                select.innerHTML = '<option value="">No hay tipos disponibles</option>';
                 return;
             }
-            select.innerHTML = '<option value="">Seleccione tipo...</option>' +
-                data.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+            select.innerHTML = '<option value="">Seleccione tipo...</option>' + data.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
         } catch (err) {
-            console.error('Error cargando tipos:', err);
-            document.getElementById('tipoMantenimientoSelect').innerHTML = '<option value="">Error al cargar tipos</option>';
+            console.error("Error cargando tipos:", err);
+            select.innerHTML = '<option value="">Error al cargar tipos</option>';
         }
     }
 
@@ -566,10 +491,11 @@
             document.getElementById('btnTakePhoto').style.display = 'inline-block';
             document.getElementById('btnRetakePhoto').style.display = 'none';
             document.getElementById('btnAcceptPhoto').style.display = 'none';
-            document.getElementById('previewArea')?.setAttribute('style', 'display:none');
+            if (document.getElementById('previewArea')) document.getElementById('previewArea').style.display = 'none';
             photoData = null;
         } catch (err) {
-            showNotification('No se pudo acceder a la cámara', 'error');
+            console.error("Error accediendo a la cámara:", err);
+            showNotification('No se pudo acceder a la cámara. Verifica permisos.', 'error');
         }
     }
 
@@ -581,14 +507,23 @@
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         photoData = canvas.toDataURL('image/jpeg', 0.8);
-        // Mostrar vista previa (opcional, pero la usaremos para aceptar)
+        // Mostrar vista previa (opcional)
+        let previewArea = document.getElementById('previewArea');
+        if (!previewArea) {
+            // Crear un área de vista previa si no existe
+            const container = document.querySelector('.camera-container');
+            previewArea = document.createElement('div');
+            previewArea.id = 'previewArea';
+            previewArea.className = 'mt-3 text-center';
+            previewArea.innerHTML = '<h5>Vista previa</h5><img id="previewImg" class="preview-img" src="">';
+            container.parentNode.insertBefore(previewArea, container.nextSibling);
+        }
         const previewImg = document.getElementById('previewImg');
         if (previewImg) previewImg.src = photoData;
+        previewArea.style.display = 'block';
         document.getElementById('btnTakePhoto').style.display = 'none';
         document.getElementById('btnRetakePhoto').style.display = 'inline-block';
         document.getElementById('btnAcceptPhoto').style.display = 'inline-block';
-        const previewArea = document.getElementById('previewArea');
-        if (previewArea) previewArea.style.display = 'block';
     };
 
     document.getElementById('btnRetakePhoto').onclick = () => {
@@ -604,8 +539,7 @@
         if (photoData) {
             fotosTomadas.push(photoData);
             actualizarPreviewFotos();
-            // Reiniciar cámara para nueva foto
-            document.getElementById('btnRetakePhoto').click();
+            document.getElementById('btnRetakePhoto').click(); // reiniciar cámara
         }
     };
 
@@ -615,10 +549,7 @@
         fotosTomadas.forEach((foto, idx) => {
             const div = document.createElement('div');
             div.className = 'foto-thumb';
-            div.innerHTML = `
-                <img src="${foto}" alt="Evidencia">
-                <button type="button" class="btn btn-sm btn-danger" data-idx="${idx}">✖</button>
-            `;
+            div.innerHTML = `<img src="${foto}" alt="Evidencia"><button type="button" class="btn btn-sm btn-danger" data-idx="${idx}">✖</button>`;
             div.querySelector('button').onclick = () => {
                 fotosTomadas.splice(idx, 1);
                 actualizarPreviewFotos();
@@ -633,18 +564,9 @@
         const fecha_programada = document.getElementById('fechaProgramada').value;
         const observaciones = document.getElementById('observaciones').value;
 
-        if (!activo_id) {
-            showNotification('Debe seleccionar un activo', 'warning');
-            return;
-        }
-        if (!tipo_mantenimiento_id) {
-            showNotification('Debe seleccionar un tipo de mantenimiento', 'warning');
-            return;
-        }
-        if (fotosTomadas.length === 0) {
-            showNotification('Debe tomar al menos una foto como evidencia', 'warning');
-            return;
-        }
+        if (!activo_id) { showNotification('Debe seleccionar un activo', 'warning'); return; }
+        if (!tipo_mantenimiento_id) { showNotification('Debe seleccionar un tipo de mantenimiento', 'warning'); return; }
+        if (fotosTomadas.length === 0) { showNotification('Debe tomar al menos una foto como evidencia', 'warning'); return; }
 
         try {
             const payload = {
@@ -663,14 +585,14 @@
             const data = await resp.json();
             if (data.success === false) throw new Error(data.error || 'Error al guardar');
             showNotification(`Mantenimiento registrado con ${fotosTomadas.length} fotos`);
-            // Limpiar formulario y fotos
+            // Limpiar
             fotosTomadas = [];
             actualizarPreviewFotos();
             document.getElementById('mantenimientoForm').reset();
             document.getElementById('activoSelect').value = '';
             document.getElementById('tipoMantenimientoSelect').value = '';
             document.getElementById('observaciones').value = '';
-            await iniciarCamara(); // Reiniciar cámara
+            await iniciarCamara();
         } catch (err) {
             showNotification('Error al guardar: ' + err.message, 'error');
         }
