@@ -53,6 +53,8 @@
         }
         .custom-toast.error { background: #dc3545; }
         .custom-toast.warning { background: #ffc107; color: #212529; }
+        .nav-tabs .nav-link { font-weight: 500; }
+        .tab-pane { padding-top: 20px; }
     </style>
 </head>
 <body>
@@ -79,31 +81,45 @@
         <div><span id="userName" class="badge bg-secondary me-2"></span><button id="logoutBtn" class="btn btn-outline-danger btn-sm">Cerrar sesión</button></div>
     </div>
 
-    <!-- Panel Usuarios (solo admin y supervisor) -->
-    <div id="usuariosPanel" class="card p-3 mb-4" style="display:none;">
-        <h4>Gestión de Usuarios</h4>
-        <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalUsuario">+ Nuevo Usuario</button>
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead><tr><th>ID</th><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Activo</th><th>Acciones</th></thead>
-                <tbody id="usuariosTableBody"></tbody>
-            </table>
+    <!-- Contenedor de pestañas (solo para admin/supervisor) -->
+    <div id="managementTabs" class="card p-3 mb-4" style="display:none;">
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="usuarios-tab" data-bs-toggle="tab" data-bs-target="#usuarios" type="button" role="tab">Gestión de Usuarios</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="activos-tab" data-bs-toggle="tab" data-bs-target="#activos" type="button" role="tab">Gestión de Activos</button>
+            </li>
+        </ul>
+        <div class="tab-content" id="myTabContent">
+            <!-- Tab Usuarios -->
+            <div class="tab-pane fade show active" id="usuarios" role="tabpanel">
+                <div class="d-flex justify-content-end mb-3 mt-3">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalUsuario">+ Nuevo Usuario</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead><tr><th>ID</th><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Activo</th><th>Acciones</th></thead>
+                        <tbody id="usuariosTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Tab Activos -->
+            <div class="tab-pane fade" id="activos" role="tabpanel">
+                <div class="d-flex justify-content-end mb-3 mt-3">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalActivo">+ Nuevo Activo</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Tipo</th><th>Ubicación</th><th>Acciones</th></thead>
+                        <tbody id="activosTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Panel Activos (solo admin y supervisor) -->
-    <div id="activosPanel" class="card p-3 mb-4" style="display:none;">
-        <h4>Gestión de Activos</h4>
-        <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#modalActivo">+ Nuevo Activo</button>
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Tipo</th><th>Ubicación</th><th>Acciones</th></thead>
-                <tbody id="activosTableBody"></tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Panel Técnico (toma de fotos) -->
+    <!-- Panel Técnico (toma de fotos) - visible solo para rol técnico -->
     <div id="tecnicoPanel" class="card p-3" style="display:none;">
         <h4>Registro de Evidencias</h4>
         <div class="mb-3">
@@ -242,7 +258,7 @@
         }
     }
 
-    // Modal de confirmación personalizado (reemplaza confirm())
+    // Modal de confirmación personalizado
     function showConfirmDialog(message) {
         return new Promise((resolve) => {
             const modalEl = document.getElementById('confirmModal');
@@ -303,14 +319,18 @@
         const isSupervisor = currentUser.rol === 'supervisor';
         const isAdminOrSupervisor = isAdmin || isSupervisor;
 
-        document.getElementById('usuariosPanel').style.display = isAdminOrSupervisor ? 'block' : 'none';
-        document.getElementById('activosPanel').style.display = isAdminOrSupervisor ? 'block' : 'none';
-        document.getElementById('tecnicoPanel').style.display = isAdminOrSupervisor ? 'none' : 'block';
-
+        // Mostrar pestañas solo para admin/supervisor
+        const managementTabs = document.getElementById('managementTabs');
+        const tecnicoPanel = document.getElementById('tecnicoPanel');
+        
         if (isAdminOrSupervisor) {
+            managementTabs.style.display = 'block';
+            tecnicoPanel.style.display = 'none';
             cargarUsuarios();
             cargarActivos();
         } else {
+            managementTabs.style.display = 'none';
+            tecnicoPanel.style.display = 'block';
             cargarActivosTecnico();
             iniciarCamara();
         }
@@ -357,8 +377,8 @@
                 <td>
                     <button class="btn btn-sm btn-warning editar-usuario" data-id="${u.id}">Editar</button>
                     <button class="btn btn-sm btn-danger eliminar-usuario" data-id="${u.id}">Eliminar</button>
-                  </td>
-              </table>
+                </td>
+            </tr>
         `).join('');
         document.querySelectorAll('.editar-usuario').forEach(btn => btn.onclick = () => editarUsuario(btn.dataset.id));
         document.querySelectorAll('.eliminar-usuario').forEach(btn => btn.onclick = () => eliminarUsuario(btn.dataset.id));
@@ -426,8 +446,8 @@
                 <td>
                     <button class="btn btn-sm btn-warning editar-activo" data-id="${a.id}">Editar</button>
                     <button class="btn btn-sm btn-danger eliminar-activo" data-id="${a.id}">Eliminar</button>
-                   </td>
-              </tr>
+                </td>
+            </tr>
         `).join('');
         document.querySelectorAll('.editar-activo').forEach(btn => btn.onclick = () => editarActivo(btn.dataset.id));
         document.querySelectorAll('.eliminar-activo').forEach(btn => btn.onclick = () => eliminarActivo(btn.dataset.id));
