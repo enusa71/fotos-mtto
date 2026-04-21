@@ -55,6 +55,24 @@
         .custom-toast.warning { background: #ffc107; color: #212529; }
         .nav-tabs .nav-link { font-weight: 500; }
         .tab-pane { padding-top: 20px; }
+        .foto-thumb {
+            position: relative;
+            width: 100px;
+            margin: 5px;
+        }
+        .foto-thumb img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .foto-thumb button {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            border-radius: 20px;
+            padding: 2px 8px;
+        }
     </style>
 </head>
 <body>
@@ -119,15 +137,34 @@
         </div>
     </div>
 
-    <!-- Panel Técnico (toma de fotos) - visible solo para rol técnico -->
+    <!-- Panel Técnico (Registro de Mantenimiento con múltiples fotos) -->
     <div id="tecnicoPanel" class="card p-3" style="display:none;">
-        <h4>Registro de Evidencias</h4>
-        <div class="mb-3">
-            <label>Seleccione el activo (bodega / equipo)</label>
-            <select id="activoSelect" class="form-select" required>
-                <option value="">Cargando activos...</option>
-            </select>
-        </div>
+        <h4><i class="fas fa-clipboard-list"></i> Registro de Mantenimiento</h4>
+        <form id="mantenimientoForm">
+            <div class="mb-3">
+                <label>Activo (bodega / equipo)</label>
+                <select id="activoSelect" class="form-select" required>
+                    <option value="">Cargando activos...</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label>Tipo de mantenimiento</label>
+                <select id="tipoMantenimientoSelect" class="form-select" required>
+                    <option value="">Cargando tipos...</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label>Fecha programada</label>
+                <input type="date" id="fechaProgramada" class="form-control">
+            </div>
+            <div class="mb-3">
+                <label>Observaciones</label>
+                <textarea id="observaciones" class="form-control" rows="2" placeholder="Describa la actividad realizada..."></textarea>
+            </div>
+        </form>
+
+        <hr>
+        <h5><i class="fas fa-camera"></i> Evidencias fotográficas</h5>
         <div class="camera-container">
             <video id="cameraVideo" autoplay playsinline></video>
             <canvas id="cameraCanvas" style="display:none;"></canvas>
@@ -135,12 +172,10 @@
         <div class="btn-group-custom">
             <button id="btnTakePhoto" class="btn btn-primary btn-lg">📷 Tomar foto</button>
             <button id="btnRetakePhoto" class="btn btn-warning btn-lg" style="display:none;">🔄 Repetir</button>
-            <button id="btnAcceptPhoto" class="btn btn-success btn-lg" style="display:none;">✅ Aceptar y subir</button>
+            <button id="btnAcceptPhoto" class="btn btn-success btn-lg" style="display:none;">✅ Añadir foto</button>
         </div>
-        <div id="previewArea" class="mt-3 text-center" style="display:none;">
-            <h5>Vista previa</h5>
-            <img id="previewImg" class="preview-img" src="">
-        </div>
+        <div id="fotosPreview" class="d-flex flex-wrap gap-2 mt-3"></div>
+        <button id="btnGuardarMantenimiento" class="btn btn-success btn-lg w-100 mt-3">📌 Finalizar mantenimiento</button>
         <div id="messageArea" class="mt-3 alert alert-info d-none"></div>
     </div>
 </div>
@@ -216,11 +251,13 @@
     const WEBHOOK_CREAR_ACTIVO = `${N8N_BASE_URL}/webhook/crear-activo`;
     const WEBHOOK_ACTUALIZAR_ACTIVO = `${N8N_BASE_URL}/webhook/actualizar-activo`;
     const WEBHOOK_ELIMINAR_ACTIVO = `${N8N_BASE_URL}/webhook/eliminar-activo`;
-    const WEBHOOK_SUBIR_FOTO = `${N8N_BASE_URL}/webhook/subir-foto`;
+    const WEBHOOK_CREAR_MANTENIMIENTO = `${N8N_BASE_URL}/webhook/crear-mantenimiento`;
+    const WEBHOOK_LISTAR_TIPOS_MANTENIMIENTO = `${N8N_BASE_URL}/webhook/listar-tipos-mantenimiento`;
 
     let currentUser = null;
     let currentStream = null;
     let photoData = null;
+    let fotosTomadas = [];  // Array para múltiples fotos
 
     // Helpers
     const loadingDiv = document.getElementById('loading');
@@ -264,10 +301,8 @@
             const modalEl = document.getElementById('confirmModal');
             const modalMessage = document.getElementById('confirmModalMessage');
             const okBtn = document.getElementById('confirmModalOkBtn');
-            
             modalMessage.innerText = message;
             const modal = new bootstrap.Modal(modalEl);
-            
             const onOk = () => {
                 modal.hide();
                 cleanup();
@@ -278,15 +313,12 @@
                 cleanup();
                 resolve(false);
             };
-            
             const cleanup = () => {
                 okBtn.removeEventListener('click', onOk);
                 modalEl.removeEventListener('hidden.bs.modal', onCancel);
             };
-            
             okBtn.addEventListener('click', onOk);
             modalEl.addEventListener('hidden.bs.modal', onCancel);
-            
             modal.show();
         });
     }
@@ -319,7 +351,6 @@
         const isSupervisor = currentUser.rol === 'supervisor';
         const isAdminOrSupervisor = isAdmin || isSupervisor;
 
-        // Mostrar pestañas solo para admin/supervisor
         const managementTabs = document.getElementById('managementTabs');
         const tecnicoPanel = document.getElementById('tecnicoPanel');
         
@@ -332,6 +363,7 @@
             managementTabs.style.display = 'none';
             tecnicoPanel.style.display = 'block';
             cargarActivosTecnico();
+            cargarTiposMantenimiento();  // Cargar tipos de mantenimiento
             iniciarCamara();
         }
     }
@@ -401,7 +433,6 @@
     async function eliminarUsuario(id) {
         const confirmado = await showConfirmDialog('¿Eliminar este usuario? Esta acción no se puede deshacer.');
         if (!confirmado) return;
-        
         await apiCall(WEBHOOK_ELIMINAR_USUARIO, {
             method: 'DELETE',
             body: JSON.stringify({ id, admin_id: currentUser.id })
@@ -469,7 +500,6 @@
     async function eliminarActivo(id) {
         const confirmado = await showConfirmDialog('¿Eliminar este activo? Se perderán las fotos asociadas.');
         if (!confirmado) return;
-        
         await apiCall(WEBHOOK_ELIMINAR_ACTIVO, {
             method: 'DELETE',
             body: JSON.stringify({ id, admin_id: currentUser.id })
@@ -497,7 +527,7 @@
         cargarActivosTecnico();
     };
 
-    // ==================== TÉCNICO ====================
+    // ==================== TÉCNICO: MÚLTIPLES FOTOS Y MANTENIMIENTO ====================
     async function cargarActivosTecnico() {
         const data = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
         const select = document.getElementById('activoSelect');
@@ -507,6 +537,22 @@
         }
         select.innerHTML = '<option value="">Seleccione un activo...</option>' +
             data.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
+    }
+
+    async function cargarTiposMantenimiento() {
+        try {
+            const data = await apiCall(WEBHOOK_LISTAR_TIPOS_MANTENIMIENTO);
+            const select = document.getElementById('tipoMantenimientoSelect');
+            if (!data.length) {
+                select.innerHTML = '<option value="">No hay tipos de mantenimiento</option>';
+                return;
+            }
+            select.innerHTML = '<option value="">Seleccione tipo...</option>' +
+                data.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+        } catch (err) {
+            console.error('Error cargando tipos:', err);
+            document.getElementById('tipoMantenimientoSelect').innerHTML = '<option value="">Error al cargar tipos</option>';
+        }
     }
 
     async function iniciarCamara() {
@@ -520,7 +566,7 @@
             document.getElementById('btnTakePhoto').style.display = 'inline-block';
             document.getElementById('btnRetakePhoto').style.display = 'none';
             document.getElementById('btnAcceptPhoto').style.display = 'none';
-            document.getElementById('previewArea').style.display = 'none';
+            document.getElementById('previewArea')?.setAttribute('style', 'display:none');
             photoData = null;
         } catch (err) {
             showNotification('No se pudo acceder a la cámara', 'error');
@@ -535,46 +581,99 @@
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         photoData = canvas.toDataURL('image/jpeg', 0.8);
-        document.getElementById('previewImg').src = photoData;
-        document.getElementById('previewArea').style.display = 'block';
+        // Mostrar vista previa (opcional, pero la usaremos para aceptar)
+        const previewImg = document.getElementById('previewImg');
+        if (previewImg) previewImg.src = photoData;
         document.getElementById('btnTakePhoto').style.display = 'none';
         document.getElementById('btnRetakePhoto').style.display = 'inline-block';
         document.getElementById('btnAcceptPhoto').style.display = 'inline-block';
+        const previewArea = document.getElementById('previewArea');
+        if (previewArea) previewArea.style.display = 'block';
     };
 
     document.getElementById('btnRetakePhoto').onclick = () => {
         photoData = null;
-        document.getElementById('previewArea').style.display = 'none';
+        const previewArea = document.getElementById('previewArea');
+        if (previewArea) previewArea.style.display = 'none';
         document.getElementById('btnTakePhoto').style.display = 'inline-block';
         document.getElementById('btnRetakePhoto').style.display = 'none';
         document.getElementById('btnAcceptPhoto').style.display = 'none';
     };
 
-    document.getElementById('btnAcceptPhoto').onclick = async () => {
-        if (!photoData) return;
-        const activoId = document.getElementById('activoSelect').value;
-        if (!activoId) {
+    document.getElementById('btnAcceptPhoto').onclick = () => {
+        if (photoData) {
+            fotosTomadas.push(photoData);
+            actualizarPreviewFotos();
+            // Reiniciar cámara para nueva foto
+            document.getElementById('btnRetakePhoto').click();
+        }
+    };
+
+    function actualizarPreviewFotos() {
+        const container = document.getElementById('fotosPreview');
+        container.innerHTML = '';
+        fotosTomadas.forEach((foto, idx) => {
+            const div = document.createElement('div');
+            div.className = 'foto-thumb';
+            div.innerHTML = `
+                <img src="${foto}" alt="Evidencia">
+                <button type="button" class="btn btn-sm btn-danger" data-idx="${idx}">✖</button>
+            `;
+            div.querySelector('button').onclick = () => {
+                fotosTomadas.splice(idx, 1);
+                actualizarPreviewFotos();
+            };
+            container.appendChild(div);
+        });
+    }
+
+    document.getElementById('btnGuardarMantenimiento').onclick = async () => {
+        const activo_id = document.getElementById('activoSelect').value;
+        const tipo_mantenimiento_id = document.getElementById('tipoMantenimientoSelect').value;
+        const fecha_programada = document.getElementById('fechaProgramada').value;
+        const observaciones = document.getElementById('observaciones').value;
+
+        if (!activo_id) {
             showNotification('Debe seleccionar un activo', 'warning');
             return;
         }
+        if (!tipo_mantenimiento_id) {
+            showNotification('Debe seleccionar un tipo de mantenimiento', 'warning');
+            return;
+        }
+        if (fotosTomadas.length === 0) {
+            showNotification('Debe tomar al menos una foto como evidencia', 'warning');
+            return;
+        }
+
         try {
-            await apiCall(WEBHOOK_SUBIR_FOTO, {
+            const payload = {
+                admin_id: currentUser.id,
+                activo_id: parseInt(activo_id),
+                tipo_mantenimiento_id: parseInt(tipo_mantenimiento_id),
+                fecha_programada: fecha_programada || new Date().toISOString().slice(0,10),
+                observaciones: observaciones,
+                fotos: fotosTomadas
+            };
+            const resp = await fetch(WEBHOOK_CREAR_MANTENIMIENTO, {
                 method: 'POST',
-                body: JSON.stringify({
-                    activo_id: parseInt(activoId),
-                    tecnico_id: currentUser.id,
-                    foto_base64: photoData
-                })
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
-            showNotification('Foto guardada correctamente');
-            await iniciarCamara();
+            const data = await resp.json();
+            if (data.success === false) throw new Error(data.error || 'Error al guardar');
+            showNotification(`Mantenimiento registrado con ${fotosTomadas.length} fotos`);
+            // Limpiar formulario y fotos
+            fotosTomadas = [];
+            actualizarPreviewFotos();
+            document.getElementById('mantenimientoForm').reset();
             document.getElementById('activoSelect').value = '';
-            photoData = null;
-            document.getElementById('previewArea').style.display = 'none';
-            document.getElementById('btnTakePhoto').style.display = 'inline-block';
-            document.getElementById('btnRetakePhoto').style.display = 'none';
-            document.getElementById('btnAcceptPhoto').style.display = 'none';
-        } catch (err) {}
+            document.getElementById('tipoMantenimientoSelect').value = '';
+            document.getElementById('observaciones').value = '';
+            await iniciarCamara(); // Reiniciar cámara
+        } catch (err) {
+            showNotification('Error al guardar: ' + err.message, 'error');
+        }
     };
 
     // Inicialización
