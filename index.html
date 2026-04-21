@@ -179,7 +179,7 @@
     </div>
 </div>
 
-<!-- Modales (igual que antes) -->
+<!-- Modales -->
 <div class="modal fade" id="modalUsuario" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -217,7 +217,6 @@
     </div>
 </div>
 
-<!-- Modal de confirmación -->
 <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -271,6 +270,7 @@
         setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
     }
 
+    // apiCall mejorada: maneja arrays directamente
     async function apiCall(url, options = {}) {
         showLoading();
         try {
@@ -279,9 +279,9 @@
                 ...options
             });
             let data = await resp.json();
-            // Si la respuesta es un array directo, lo devolvemos tal cual
+            // Si es un array, devolverlo directamente (caso listar-tipos)
             if (Array.isArray(data)) return data;
-            // Si tiene success false, lanzar error
+            // Si es objeto con success false, lanzar error
             if (data && data.success === false) throw new Error(data.error || 'Error');
             if (!resp.ok) throw new Error(data.error || 'Error HTTP');
             return data;
@@ -353,8 +353,8 @@
             managementTabs.style.display = 'none';
             tecnicoPanel.style.display = 'block';
             cargarActivosTecnico();
-            cargarTiposMantenimiento().catch(err => console.error("Error cargando tipos:", err));
-            iniciarCamara(); // Siempre intentar iniciar cámara
+            cargarTiposMantenimiento();  // Cargar tipos
+            iniciarCamara();             // Iniciar cámara siempre
         }
     }
 
@@ -363,15 +363,17 @@
         location.reload();
     });
 
-    // ==================== CRUD USUARIOS (resumido, igual que antes) ====================
+    // ==================== CRUD USUARIOS (resumido) ====================
     async function cargarUsuarios() {
         const data = await apiCall(WEBHOOK_LISTAR_USUARIOS);
         const tbody = document.getElementById('usuariosTableBody');
         if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay usuarios registrados</td></tr>'; return; }
         tbody.innerHTML = data.map(u => `
-            <tr><td>${u.id}</td><td>${u.usuario}</td><td>${u.nombre}</td><td>${u.rol}</td><td>${u.activo ? 'Sí' : 'No'}</td>
-            <td><button class="btn btn-sm btn-warning editar-usuario" data-id="${u.id}">Editar</button>
-            <button class="btn btn-sm btn-danger eliminar-usuario" data-id="${u.id}">Eliminar</button></td></tr>
+            <tr>
+                <td>${u.id}</td><td>${u.usuario}</td><td>${u.nombre}</td><td>${u.rol}</td><td>${u.activo ? 'Sí' : 'No'}</td>
+                <td><button class="btn btn-sm btn-warning editar-usuario" data-id="${u.id}">Editar</button>
+                <button class="btn btn-sm btn-danger eliminar-usuario" data-id="${u.id}">Eliminar</button></td>
+            </tr>
         `).join('');
         document.querySelectorAll('.editar-usuario').forEach(btn => btn.onclick = () => editarUsuario(btn.dataset.id));
         document.querySelectorAll('.eliminar-usuario').forEach(btn => btn.onclick = () => eliminarUsuario(btn.dataset.id));
@@ -419,9 +421,11 @@
         const tbody = document.getElementById('activosTableBody');
         if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay activos registrados</td></tr>'; return; }
         tbody.innerHTML = data.map(a => `
-            <tr><td>${a.id}</td><td>${a.codigo}</td><td>${a.nombre}</td><td>${a.tipo}</td><td>${a.ubicacion || ''}</td>
-            <td><button class="btn btn-sm btn-warning editar-activo" data-id="${a.id}">Editar</button>
-            <button class="btn btn-sm btn-danger eliminar-activo" data-id="${a.id}">Eliminar</button></td></tr>
+            <tr>
+                <td>${a.id}</td><td>${a.codigo}</td><td>${a.nombre}</td><td>${a.tipo}</td><td>${a.ubicacion || ''}</td>
+                <td><button class="btn btn-sm btn-warning editar-activo" data-id="${a.id}">Editar</button>
+                <button class="btn btn-sm btn-danger eliminar-activo" data-id="${a.id}">Eliminar</button></td>
+            </tr>
         `).join('');
         document.querySelectorAll('.editar-activo').forEach(btn => btn.onclick = () => editarActivo(btn.dataset.id));
         document.querySelectorAll('.eliminar-activo').forEach(btn => btn.onclick = () => eliminarActivo(btn.dataset.id));
@@ -447,7 +451,13 @@
     }
     document.getElementById('guardarActivoBtn').onclick = async () => {
         const id = document.getElementById('activoId').value;
-        const data = { admin_id: currentUser.id, codigo: document.getElementById('activoCodigo').value, nombre: document.getElementById('activoNombre').value, tipo: document.getElementById('activoTipo').value, ubicacion: document.getElementById('activoUbicacion').value };
+        const data = {
+            admin_id: currentUser.id,
+            codigo: document.getElementById('activoCodigo').value,
+            nombre: document.getElementById('activoNombre').value,
+            tipo: document.getElementById('activoTipo').value,
+            ubicacion: document.getElementById('activoUbicacion').value
+        };
         if (id) data.id = id;
         const url = id ? WEBHOOK_ACTUALIZAR_ACTIVO : WEBHOOK_CREAR_ACTIVO;
         await apiCall(url, { method: 'POST', body: JSON.stringify(data) });
@@ -462,18 +472,21 @@
         const data = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
         const select = document.getElementById('activoSelect');
         if (!data.length) { select.innerHTML = '<option value="">No hay activos disponibles</option>'; return; }
-        select.innerHTML = '<option value="">Seleccione un activo...</option>' + data.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
+        select.innerHTML = '<option value="">Seleccione un activo...</option>' +
+            data.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
     }
 
     async function cargarTiposMantenimiento() {
         const select = document.getElementById('tipoMantenimientoSelect');
         try {
             const data = await apiCall(WEBHOOK_LISTAR_TIPOS_MANTENIMIENTO);
-            if (!data || !data.length) {
+            console.log("Tipos recibidos:", data); // Depuración
+            if (!data || !Array.isArray(data) || data.length === 0) {
                 select.innerHTML = '<option value="">No hay tipos disponibles</option>';
                 return;
             }
-            select.innerHTML = '<option value="">Seleccione tipo...</option>' + data.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+            select.innerHTML = '<option value="">Seleccione tipo...</option>' +
+                data.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
         } catch (err) {
             console.error("Error cargando tipos:", err);
             select.innerHTML = '<option value="">Error al cargar tipos</option>';
@@ -491,7 +504,8 @@
             document.getElementById('btnTakePhoto').style.display = 'inline-block';
             document.getElementById('btnRetakePhoto').style.display = 'none';
             document.getElementById('btnAcceptPhoto').style.display = 'none';
-            if (document.getElementById('previewArea')) document.getElementById('previewArea').style.display = 'none';
+            const previewArea = document.getElementById('previewArea');
+            if (previewArea) previewArea.style.display = 'none';
             photoData = null;
         } catch (err) {
             console.error("Error accediendo a la cámara:", err);
@@ -499,6 +513,7 @@
         }
     }
 
+    // Capturar foto
     document.getElementById('btnTakePhoto').onclick = () => {
         const video = document.getElementById('cameraVideo');
         const canvas = document.getElementById('cameraCanvas');
@@ -507,10 +522,9 @@
         canvas.height = video.videoHeight;
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         photoData = canvas.toDataURL('image/jpeg', 0.8);
-        // Mostrar vista previa (opcional)
+        // Crear o mostrar área de vista previa
         let previewArea = document.getElementById('previewArea');
         if (!previewArea) {
-            // Crear un área de vista previa si no existe
             const container = document.querySelector('.camera-container');
             previewArea = document.createElement('div');
             previewArea.id = 'previewArea';
@@ -539,7 +553,7 @@
         if (photoData) {
             fotosTomadas.push(photoData);
             actualizarPreviewFotos();
-            document.getElementById('btnRetakePhoto').click(); // reiniciar cámara
+            document.getElementById('btnRetakePhoto').click(); // reiniciar cámara para siguiente foto
         }
     };
 
@@ -585,14 +599,14 @@
             const data = await resp.json();
             if (data.success === false) throw new Error(data.error || 'Error al guardar');
             showNotification(`Mantenimiento registrado con ${fotosTomadas.length} fotos`);
-            // Limpiar
+            // Limpiar formulario y fotos
             fotosTomadas = [];
             actualizarPreviewFotos();
             document.getElementById('mantenimientoForm').reset();
             document.getElementById('activoSelect').value = '';
             document.getElementById('tipoMantenimientoSelect').value = '';
             document.getElementById('observaciones').value = '';
-            await iniciarCamara();
+            await iniciarCamara(); // Reiniciar cámara
         } catch (err) {
             showNotification('Error al guardar: ' + err.message, 'error');
         }
