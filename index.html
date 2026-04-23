@@ -6,6 +6,7 @@
     <title>Mantenimiento Zona Franca</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background-color: #f0f2f5; padding: 20px; }
         .card { border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
@@ -74,6 +75,16 @@
             padding: 2px 8px;
         }
         .preview-img { max-width: 100%; border-radius: 12px; margin-top: 10px; }
+        
+        /* Estilos para el dashboard */
+        .stat-card { background: white; border-radius: 20px; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.05); transition: transform 0.3s; }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-number { font-size: 2.5rem; font-weight: bold; color: #667eea; }
+        .stat-label { color: #666; font-size: 0.9rem; }
+        .foto-gallery img { width: 150px; height: 150px; object-fit: cover; border-radius: 12px; margin: 5px; cursor: pointer; transition: transform 0.2s; }
+        .foto-gallery img:hover { transform: scale(1.05); }
+        .filter-card { background: white; border-radius: 16px; padding: 1rem; margin-bottom: 1.5rem; }
+        .table-hover tbody tr:hover { background-color: #f8f9fa; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -93,15 +104,15 @@
     </div>
 </div>
 
-<!-- Dashboard -->
+<!-- Dashboard principal -->
 <div id="dashboard" class="dashboard container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
         <h2><i class="fas fa-tools"></i> Sistema de Mantenimiento</h2>
         <div><span id="userName" class="badge bg-secondary me-2"></span><button id="logoutBtn" class="btn btn-outline-danger btn-sm">Cerrar sesión</button></div>
     </div>
 
-    <!-- Contenedor de pestañas (solo para admin/supervisor) -->
-    <div id="managementTabs" class="card p-3 mb-4" style="display:none;">
+    <!-- Pestañas -->
+    <div class="card p-3 mb-4">
         <ul class="nav nav-tabs" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="usuarios-tab" data-bs-toggle="tab" data-bs-target="#usuarios" type="button" role="tab">Gestión de Usuarios</button>
@@ -109,8 +120,60 @@
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="activos-tab" data-bs-toggle="tab" data-bs-target="#activos" type="button" role="tab">Gestión de Activos</button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboardContent" type="button" role="tab"><i class="fas fa-chart-line"></i> Dashboard</button>
+            </li>
         </ul>
+        
+        <!-- Panel técnico (visible solo para técnicos, fuera de las pestañas) -->
+        <div id="tecnicoPanel" class="mt-3" style="display:none;">
+            <div class="card p-3">
+                <h4><i class="fas fa-clipboard-list"></i> Registro de Mantenimiento</h4>
+                <form id="mantenimientoForm">
+                    <div class="mb-3">
+                        <label>Activo (bodega / equipo)</label>
+                        <select id="activoSelect" class="form-select" required>
+                            <option value="">Cargando activos...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Tipo de mantenimiento</label>
+                        <select id="tipoMantenimientoSelect" class="form-select" required>
+                            <option value="">Cargando tipos...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Fecha programada</label>
+                        <input type="date" id="fechaProgramada" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label>Observaciones</label>
+                        <textarea id="observaciones" class="form-control" rows="2" placeholder="Describa la actividad realizada..."></textarea>
+                    </div>
+                </form>
+
+                <hr>
+                <h5><i class="fas fa-camera"></i> Evidencias fotográficas</h5>
+                <div class="camera-container">
+                    <video id="cameraVideo" autoplay playsinline muted></video>
+                    <canvas id="cameraCanvas" style="display:none;"></canvas>
+                </div>
+                <div id="previewArea" class="mt-3 text-center" style="display:none;">
+                    <h6>Vista previa</h6>
+                    <img id="previewImg" class="preview-img" src="">
+                </div>
+                <div class="btn-group-custom">
+                    <button id="btnTakePhoto" class="btn btn-primary btn-lg">📷 Tomar foto</button>
+                    <button id="btnRetakePhoto" class="btn btn-warning btn-lg" style="display:none;">🔄 Repetir</button>
+                    <button id="btnAcceptPhoto" class="btn btn-success btn-lg" style="display:none;">✅ Añadir foto</button>
+                </div>
+                <div id="fotosPreview" class="d-flex flex-wrap gap-2 mt-3"></div>
+                <button id="btnGuardarMantenimiento" class="btn btn-success btn-lg w-100 mt-3">📌 Finalizar mantenimiento</button>
+            </div>
+        </div>
+
         <div class="tab-content" id="myTabContent">
+            <!-- Tab Usuarios -->
             <div class="tab-pane fade show active" id="usuarios" role="tabpanel">
                 <div class="d-flex justify-content-end mb-3 mt-3">
                     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalUsuario">+ Nuevo Usuario</button>
@@ -122,6 +185,8 @@
                     </table>
                 </div>
             </div>
+
+            <!-- Tab Activos -->
             <div class="tab-pane fade" id="activos" role="tabpanel">
                 <div class="d-flex justify-content-end mb-3 mt-3">
                     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalActivo">+ Nuevo Activo</button>
@@ -133,57 +198,157 @@
                     </table>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Panel Técnico (Registro de Mantenimiento) -->
-    <div id="tecnicoPanel" class="card p-3" style="display:none;">
-        <h4><i class="fas fa-clipboard-list"></i> Registro de Mantenimiento</h4>
-        <form id="mantenimientoForm">
-            <div class="mb-3">
-                <label>Activo (bodega / equipo)</label>
-                <select id="activoSelect" class="form-select" required>
-                    <option value="">Cargando activos...</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label>Tipo de mantenimiento</label>
-                <select id="tipoMantenimientoSelect" class="form-select" required>
-                    <option value="">Cargando tipos...</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label>Fecha programada</label>
-                <input type="date" id="fechaProgramada" class="form-control">
-            </div>
-            <div class="mb-3">
-                <label>Observaciones</label>
-                <textarea id="observaciones" class="form-control" rows="2" placeholder="Describa la actividad realizada..."></textarea>
-            </div>
-        </form>
+            <!-- Tab Dashboard -->
+            <div class="tab-pane fade" id="dashboardContent" role="tabpanel">
+                <!-- Estadísticas generales -->
+                <div class="row mb-4">
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card text-center">
+                            <div class="stat-number" id="totalMantenimientos">-</div>
+                            <div class="stat-label">Total Mantenimientos</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card text-center">
+                            <div class="stat-number" id="totalFotos">-</div>
+                            <div class="stat-label">Total Fotos</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card text-center">
+                            <div class="stat-number" id="totalTecnicos">-</div>
+                            <div class="stat-label">Técnicos Activos</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="stat-card text-center">
+                            <div class="stat-number" id="totalActivos">-</div>
+                            <div class="stat-label">Activos Atendidos</div>
+                        </div>
+                    </div>
+                </div>
 
-        <hr>
-        <h5><i class="fas fa-camera"></i> Evidencias fotográficas</h5>
-        <div class="camera-container">
-            <video id="cameraVideo" autoplay playsinline muted></video>
-            <canvas id="cameraCanvas" style="display:none;"></canvas>
+                <!-- Gráficos -->
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-header bg-white">
+                                <h6 class="mb-0"><i class="fas fa-chart-pie"></i> Mantenimientos por tipo</h6>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="tipoChart" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-header bg-white">
+                                <h6 class="mb-0"><i class="fas fa-chart-line"></i> Tendencia mensual</h6>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="tendenciaChart" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-header bg-white">
+                                <h6 class="mb-0"><i class="fas fa-trophy"></i> Top técnicos</h6>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm" id="topTecnicosTable">
+                                    <thead><tr><th>Técnico</th><th>Mantenimientos</th></thead>
+                                    <tbody><tr><td colspan="2">Cargando...</td></tr></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-header bg-white">
+                                <h6 class="mb-0"><i class="fas fa-building"></i> Top activos</h6>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm" id="topActivosTable">
+                                    <thead><tr><th>Activo</th><th>Mantenimientos</th></thead>
+                                    <tbody><tr><td colspan="2">Cargando...</td></tr></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filtros -->
+                <div class="filter-card">
+                    <h6 class="mb-3"><i class="fas fa-filter"></i> Filtros de mantenimientos</h6>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <select id="filtroActivo" class="form-select">
+                                <option value="">Todos los activos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="filtroTecnico" class="form-select">
+                                <option value="">Todos los técnicos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <select id="filtroTipo" class="form-select">
+                                <option value="">Todos los tipos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="date" id="filtroFechaDesde" class="form-control" placeholder="Fecha desde">
+                        </div>
+                        <div class="col-md-2">
+                            <input type="date" id="filtroFechaHasta" class="form-control" placeholder="Fecha hasta">
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <button id="btnAplicarFiltros" class="btn btn-primary">Aplicar filtros</button>
+                            <button id="btnLimpiarFiltros" class="btn btn-secondary">Limpiar filtros</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Listado de mantenimientos -->
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0"><i class="fas fa-list"></i> Historial de mantenimientos</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0" id="mantenimientosTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Fecha</th>
+                                        <th>Activo</th>
+                                        <th>Técnico</th>
+                                        <th>Tipo</th>
+                                        <th>Observaciones</th>
+                                        <th>Fotos</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mantenimientosTableBody">
+                                    <tr><td colspan="8">Cargando...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div id="previewArea" class="mt-3 text-center" style="display:none;">
-            <h6>Vista previa</h6>
-            <img id="previewImg" class="preview-img" src="">
-        </div>
-        <div class="btn-group-custom">
-            <button id="btnTakePhoto" class="btn btn-primary btn-lg">📷 Tomar foto</button>
-            <button id="btnRetakePhoto" class="btn btn-warning btn-lg" style="display:none;">🔄 Repetir</button>
-            <button id="btnAcceptPhoto" class="btn btn-success btn-lg" style="display:none;">✅ Añadir foto</button>
-        </div>
-        <div id="fotosPreview" class="d-flex flex-wrap gap-2 mt-3"></div>
-        <button id="btnGuardarMantenimiento" class="btn btn-success btn-lg w-100 mt-3">📌 Finalizar mantenimiento</button>
-        <div id="messageArea" class="mt-3 alert alert-info d-none"></div>
     </div>
 </div>
 
-<!-- Modales (igual que antes) -->
+<!-- Modales -->
 <div class="modal fade" id="modalUsuario" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -237,6 +402,34 @@
     </div>
 </div>
 
+<!-- Modal para ver detalle del mantenimiento -->
+<div class="modal fade" id="detalleModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-info-circle"></i> Detalle del mantenimiento</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detalleContent">Cargando...</div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para ver foto ampliada -->
+<div class="modal fade" id="fotoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Evidencia fotográfica</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="fotoAmpliada" class="img-fluid" src="">
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // ==================== CONFIGURACIÓN ====================
@@ -253,11 +446,17 @@
     const WEBHOOK_ELIMINAR_ACTIVO = `${N8N_BASE_URL}/webhook/eliminar-activo`;
     const WEBHOOK_LISTAR_TIPOS_MANTENIMIENTO = `${N8N_BASE_URL}/webhook/listar-tipos-mantenimiento`;
     const WEBHOOK_CREAR_MANTENIMIENTO = `${N8N_BASE_URL}/webhook/crear-mantenimiento`;
+    const API_LISTAR_MANTENIMIENTOS = `${N8N_BASE_URL}/webhook/listar-mantenimientos`;
+    const API_DETALLE_MANTENIMIENTO = `${N8N_BASE_URL}/webhook/detalle-mantenimiento`;
+    const API_ESTADISTICAS = `${N8N_BASE_URL}/webhook/estadisticas-mantenimiento`;
 
     let currentUser = null;
     let currentStream = null;
     let photoData = null;
     let fotosTomadas = [];
+    let tipoChart = null;
+    let tendenciaChart = null;
+    let dashboardLoaded = false;
 
     // Helpers
     const loadingDiv = document.getElementById('loading');
@@ -339,19 +538,33 @@
 
         const isAdmin = currentUser.rol === 'admin';
         const isSupervisor = currentUser.rol === 'supervisor';
-        const isAdminOrSupervisor = isAdmin || isSupervisor;
+        const isTecnico = currentUser.rol === 'tecnico';
 
-        const managementTabs = document.getElementById('managementTabs');
-        const tecnicoPanel = document.getElementById('tecnicoPanel');
-        
-        if (isAdminOrSupervisor) {
-            managementTabs.style.display = 'block';
-            tecnicoPanel.style.display = 'none';
+        const tabUsuarios = document.getElementById('usuarios-tab');
+        const tabActivos = document.getElementById('activos-tab');
+        const tabDashboard = document.getElementById('dashboard-tab');
+        const panelTecnico = document.getElementById('tecnicoPanel');
+
+        if (isAdmin) {
+            tabUsuarios.style.display = 'block';
+            tabActivos.style.display = 'block';
+            tabDashboard.style.display = 'block';
+            panelTecnico.style.display = 'none';
             cargarUsuarios();
             cargarActivos();
-        } else {
-            managementTabs.style.display = 'none';
-            tecnicoPanel.style.display = 'block';
+        } 
+        else if (isSupervisor) {
+            tabUsuarios.style.display = 'none';
+            tabActivos.style.display = 'block';
+            tabDashboard.style.display = 'block';
+            panelTecnico.style.display = 'none';
+            cargarActivos();
+        } 
+        else if (isTecnico) {
+            tabUsuarios.style.display = 'none';
+            tabActivos.style.display = 'none';
+            tabDashboard.style.display = 'none';
+            panelTecnico.style.display = 'block';
             cargarActivosTecnico();
             cargarTiposMantenimiento();
             iniciarCamara();
@@ -386,6 +599,7 @@
         document.querySelectorAll('.editar-usuario').forEach(btn => btn.onclick = () => editarUsuario(btn.dataset.id));
         document.querySelectorAll('.eliminar-usuario').forEach(btn => btn.onclick = () => eliminarUsuario(btn.dataset.id));
     }
+
     async function editarUsuario(id) {
         const users = await apiCall(WEBHOOK_LISTAR_USUARIOS);
         const user = users.find(u => u.id == id);
@@ -399,12 +613,14 @@
             new bootstrap.Modal(document.getElementById('modalUsuario')).show();
         }
     }
+
     async function eliminarUsuario(id) {
-        if (!await showConfirmDialog('¿Eliminar este usuario? Esta acción no se puede deshacer.')) return;
+        if (!await showConfirmDialog('¿Eliminar este usuario?')) return;
         await apiCall(WEBHOOK_ELIMINAR_USUARIO, { method: 'DELETE', body: JSON.stringify({ id, admin_id: currentUser.id }) });
         showNotification('Usuario eliminado');
         cargarUsuarios();
     }
+
     document.getElementById('guardarUsuarioBtn').onclick = async () => {
         const id = document.getElementById('usuarioId').value;
         const usuario = document.getElementById('usuarioUsername').value;
@@ -441,189 +657,7 @@
         `).join('');
         document.querySelectorAll('.editar-activo').forEach(btn => btn.onclick = () => editarActivo(btn.dataset.id));
         document.querySelectorAll('.eliminar-activo').forEach(btn => btn.onclick = () => eliminarActivo(btn.dataset.id));
-    }
-    async function editarActivo(id) {
-        const activos = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
-        const activo = activos.find(a => a.id == id);
-        if (activo) {
-            document.getElementById('activoId').value = activo.id;
-            document.getElementById('activoCodigo').value = activo.codigo;
-            document.getElementById('activoNombre').value = activo.nombre;
-            document.getElementById('activoTipo').value = activo.tipo;
-            document.getElementById('activoUbicacion').value = activo.ubicacion || '';
-            new bootstrap.Modal(document.getElementById('modalActivo')).show();
-        }
-    }
-    async function eliminarActivo(id) {
-        if (!await showConfirmDialog('¿Eliminar este activo? Se perderán las fotos asociadas.')) return;
-        await apiCall(WEBHOOK_ELIMINAR_ACTIVO, { method: 'DELETE', body: JSON.stringify({ id, admin_id: currentUser.id }) });
-        showNotification('Activo eliminado');
-        cargarActivos();
-        cargarActivosTecnico();
-    }
-    document.getElementById('guardarActivoBtn').onclick = async () => {
-        const id = document.getElementById('activoId').value;
-        const data = {
-            admin_id: currentUser.id,
-            codigo: document.getElementById('activoCodigo').value,
-            nombre: document.getElementById('activoNombre').value,
-            tipo: document.getElementById('activoTipo').value,
-            ubicacion: document.getElementById('activoUbicacion').value
-        };
-        if (id) data.id = id;
-        const url = id ? WEBHOOK_ACTUALIZAR_ACTIVO : WEBHOOK_CREAR_ACTIVO;
-        await apiCall(url, { method: 'POST', body: JSON.stringify(data) });
-        showNotification('Activo guardado');
-        bootstrap.Modal.getInstance(document.getElementById('modalActivo')).hide();
-        cargarActivos();
-        cargarActivosTecnico();
-    };
-
-    // ==================== TÉCNICO ====================
-    async function cargarActivosTecnico() {
-        const data = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
-        const select = document.getElementById('activoSelect');
-        if (!data.length) { select.innerHTML = '<option value="">No hay activos disponibles</option>'; return; }
-        select.innerHTML = '<option value="">Seleccione un activo...</option>' +
-            data.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
-    }
-
-    async function cargarTiposMantenimiento() {
-        const select = document.getElementById('tipoMantenimientoSelect');
-        try {
-            let data = await apiCall(WEBHOOK_LISTAR_TIPOS_MANTENIMIENTO);
-            if (!Array.isArray(data)) data = [data];
-            if (!data || data.length === 0) {
-                select.innerHTML = '<option value="">No hay tipos disponibles</option>';
-                return;
-            }
-            select.innerHTML = '<option value="">Seleccione tipo...</option>' +
-                data.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
-        } catch (err) {
-            console.error("Error cargando tipos:", err);
-            select.innerHTML = '<option value="">Error al cargar tipos</option>';
-        }
-    }
-
-    async function iniciarCamara() {
-        if (currentStream) {
-            currentStream.getTracks().forEach(track => track.stop());
-            currentStream = null;
-        }
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-            currentStream = stream;
-            const video = document.getElementById('cameraVideo');
-            video.srcObject = stream;
-            // Forzar reproducción en algunos navegadores
-            await video.play().catch(e => console.warn("Error al reproducir video:", e));
-            document.getElementById('btnTakePhoto').style.display = 'inline-block';
-            document.getElementById('btnRetakePhoto').style.display = 'none';
-            document.getElementById('btnAcceptPhoto').style.display = 'none';
-            document.getElementById('previewArea').style.display = 'none';
-            photoData = null;
-        } catch (err) {
-            console.error("Error accediendo a la cámara:", err);
-            showNotification('No se pudo acceder a la cámara. Verifica permisos y conexión HTTPS.', 'error');
-        }
-    }
-
-    document.getElementById('btnTakePhoto').onclick = () => {
-        const video = document.getElementById('cameraVideo');
-        const canvas = document.getElementById('cameraCanvas');
-        const context = canvas.getContext('2d');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        photoData = canvas.toDataURL('image/jpeg', 0.8);
-        const previewImg = document.getElementById('previewImg');
-        previewImg.src = photoData;
-        document.getElementById('previewArea').style.display = 'block';
-        document.getElementById('btnTakePhoto').style.display = 'none';
-        document.getElementById('btnRetakePhoto').style.display = 'inline-block';
-        document.getElementById('btnAcceptPhoto').style.display = 'inline-block';
-    };
-
-    document.getElementById('btnRetakePhoto').onclick = () => {
-        photoData = null;
-        document.getElementById('previewArea').style.display = 'none';
-        document.getElementById('btnTakePhoto').style.display = 'inline-block';
-        document.getElementById('btnRetakePhoto').style.display = 'none';
-        document.getElementById('btnAcceptPhoto').style.display = 'none';
-    };
-
-    document.getElementById('btnAcceptPhoto').onclick = () => {
-        if (photoData) {
-            fotosTomadas.push(photoData);
-            actualizarPreviewFotos();
-            document.getElementById('btnRetakePhoto').click();
-        }
-    };
-
-    function actualizarPreviewFotos() {
-        const container = document.getElementById('fotosPreview');
-        container.innerHTML = '';
-        fotosTomadas.forEach((foto, idx) => {
-            const div = document.createElement('div');
-            div.className = 'foto-thumb';
-            div.innerHTML = `<img src="${foto}" alt="Evidencia"><button type="button" class="btn btn-sm btn-danger" data-idx="${idx}">✖</button>`;
-            div.querySelector('button').onclick = () => {
-                fotosTomadas.splice(idx, 1);
-                actualizarPreviewFotos();
-            };
-            container.appendChild(div);
-        });
-    }
-
-    document.getElementById('btnGuardarMantenimiento').onclick = async () => {
-        const activo_id = document.getElementById('activoSelect').value;
-        const tipo_mantenimiento_id = document.getElementById('tipoMantenimientoSelect').value;
-        const fecha_programada = document.getElementById('fechaProgramada').value;
-        const observaciones = document.getElementById('observaciones').value;
-
-        if (!activo_id) { showNotification('Debe seleccionar un activo', 'warning'); return; }
-        if (!tipo_mantenimiento_id) { showNotification('Debe seleccionar un tipo de mantenimiento', 'warning'); return; }
-        if (fotosTomadas.length === 0) { showNotification('Debe tomar al menos una foto como evidencia', 'warning'); return; }
-
-        try {
-            const payload = {
-                admin_id: currentUser.id,
-                activo_id: parseInt(activo_id),
-                tipo_mantenimiento_id: parseInt(tipo_mantenimiento_id),
-                fecha_programada: fecha_programada || new Date().toISOString().slice(0,10),
-                observaciones: observaciones,
-                fotos: fotosTomadas
-            };
-            const resp = await fetch(WEBHOOK_CREAR_MANTENIMIENTO, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const data = await resp.json();
-            if (data.success === false) throw new Error(data.error || 'Error al guardar');
-            showNotification(`Mantenimiento registrado con ${fotosTomadas.length} fotos`);
-            fotosTomadas = [];
-            actualizarPreviewFotos();
-            document.getElementById('mantenimientoForm').reset();
-            document.getElementById('activoSelect').value = '';
-            document.getElementById('tipoMantenimientoSelect').value = '';
-            document.getElementById('observaciones').value = '';
-            await iniciarCamara();
-        } catch (err) {
-            showNotification('Error al guardar: ' + err.message, 'error');
-        }
-    };
-
-    // Inicialización
-    (function init() {
-        const stored = localStorage.getItem('currentUser');
-        if (stored) {
-            try {
-                currentUser = JSON.parse(stored);
-                showDashboard();
-            } catch(e) {}
-        }
-    })();
-</script>
-</body>
-</html>
+        
+        // También actualizar filtros del dashboard si ya está cargado
+        if (document.getElementById('filtroActivo')) {
+           
