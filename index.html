@@ -660,4 +660,387 @@
         
         // También actualizar filtros del dashboard si ya está cargado
         if (document.getElementById('filtroActivo')) {
-           
+            cargarFiltrosDashboard();
+        }
+    }
+
+    async function editarActivo(id) {
+        const activos = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
+        const activo = activos.find(a => a.id == id);
+        if (activo) {
+            document.getElementById('activoId').value = activo.id;
+            document.getElementById('activoCodigo').value = activo.codigo;
+            document.getElementById('activoNombre').value = activo.nombre;
+            document.getElementById('activoTipo').value = activo.tipo;
+            document.getElementById('activoUbicacion').value = activo.ubicacion || '';
+            new bootstrap.Modal(document.getElementById('modalActivo')).show();
+        }
+    }
+
+    async function eliminarActivo(id) {
+        if (!await showConfirmDialog('¿Eliminar este activo?')) return;
+        await apiCall(WEBHOOK_ELIMINAR_ACTIVO, { method: 'DELETE', body: JSON.stringify({ id, admin_id: currentUser.id }) });
+        showNotification('Activo eliminado');
+        cargarActivos();
+        cargarActivosTecnico();
+    }
+
+    document.getElementById('guardarActivoBtn').onclick = async () => {
+        const id = document.getElementById('activoId').value;
+        const data = {
+            admin_id: currentUser.id,
+            codigo: document.getElementById('activoCodigo').value,
+            nombre: document.getElementById('activoNombre').value,
+            tipo: document.getElementById('activoTipo').value,
+            ubicacion: document.getElementById('activoUbicacion').value
+        };
+        if (id) data.id = id;
+        const url = id ? WEBHOOK_ACTUALIZAR_ACTIVO : WEBHOOK_CREAR_ACTIVO;
+        await apiCall(url, { method: 'POST', body: JSON.stringify(data) });
+        showNotification('Activo guardado');
+        bootstrap.Modal.getInstance(document.getElementById('modalActivo')).hide();
+        cargarActivos();
+        cargarActivosTecnico();
+    };
+
+    // ==================== TÉCNICO ====================
+    async function cargarActivosTecnico() {
+        const data = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
+        const select = document.getElementById('activoSelect');
+        if (!data.length) { select.innerHTML = '<option value="">No hay activos disponibles</option>'; return; }
+        select.innerHTML = '<option value="">Seleccione un activo...</option>' +
+            data.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
+    }
+
+    async function cargarTiposMantenimiento() {
+        const select = document.getElementById('tipoMantenimientoSelect');
+        try {
+            let data = await apiCall(WEBHOOK_LISTAR_TIPOS_MANTENIMIENTO);
+            if (!Array.isArray(data)) data = [data];
+            if (!data || data.length === 0) {
+                select.innerHTML = '<option value="">No hay tipos disponibles</option>';
+                return;
+            }
+            select.innerHTML = '<option value="">Seleccione tipo...</option>' +
+                data.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+        } catch (err) {
+            console.error("Error cargando tipos:", err);
+            select.innerHTML = '<option value="">Error al cargar tipos</option>';
+        }
+    }
+
+    async function iniciarCamara() {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+            currentStream = null;
+        }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            currentStream = stream;
+            const video = document.getElementById('cameraVideo');
+            video.srcObject = stream;
+            await video.play().catch(e => console.warn("Error al reproducir video:", e));
+            document.getElementById('btnTakePhoto').style.display = 'inline-block';
+            document.getElementById('btnRetakePhoto').style.display = 'none';
+            document.getElementById('btnAcceptPhoto').style.display = 'none';
+            document.getElementById('previewArea').style.display = 'none';
+            photoData = null;
+        } catch (err) {
+            console.error("Error accediendo a la cámara:", err);
+            showNotification('No se pudo acceder a la cámara. Verifica permisos y conexión HTTPS.', 'error');
+        }
+    }
+
+    document.getElementById('btnTakePhoto').onclick = () => {
+        const video = document.getElementById('cameraVideo');
+        const canvas = document.getElementById('cameraCanvas');
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        photoData = canvas.toDataURL('image/jpeg', 0.8);
+        const previewImg = document.getElementById('previewImg');
+        previewImg.src = photoData;
+        document.getElementById('previewArea').style.display = 'block';
+        document.getElementById('btnTakePhoto').style.display = 'none';
+        document.getElementById('btnRetakePhoto').style.display = 'inline-block';
+        document.getElementById('btnAcceptPhoto').style.display = 'inline-block';
+    };
+
+    document.getElementById('btnRetakePhoto').onclick = () => {
+        photoData = null;
+        document.getElementById('previewArea').style.display = 'none';
+        document.getElementById('btnTakePhoto').style.display = 'inline-block';
+        document.getElementById('btnRetakePhoto').style.display = 'none';
+        document.getElementById('btnAcceptPhoto').style.display = 'none';
+    };
+
+    document.getElementById('btnAcceptPhoto').onclick = () => {
+        if (photoData) {
+            fotosTomadas.push(photoData);
+            actualizarPreviewFotos();
+            document.getElementById('btnRetakePhoto').click();
+        }
+    };
+
+    function actualizarPreviewFotos() {
+        const container = document.getElementById('fotosPreview');
+        container.innerHTML = '';
+        fotosTomadas.forEach((foto, idx) => {
+            const div = document.createElement('div');
+            div.className = 'foto-thumb';
+            div.innerHTML = `<img src="${foto}" alt="Evidencia"><button type="button" class="btn btn-sm btn-danger" data-idx="${idx}">✖</button>`;
+            div.querySelector('button').onclick = () => {
+                fotosTomadas.splice(idx, 1);
+                actualizarPreviewFotos();
+            };
+            container.appendChild(div);
+        });
+    }
+
+    document.getElementById('btnGuardarMantenimiento').onclick = async () => {
+        const activo_id = document.getElementById('activoSelect').value;
+        const tipo_mantenimiento_id = document.getElementById('tipoMantenimientoSelect').value;
+        const fecha_programada = document.getElementById('fechaProgramada').value;
+        const observaciones = document.getElementById('observaciones').value;
+
+        if (!activo_id) { showNotification('Debe seleccionar un activo', 'warning'); return; }
+        if (!tipo_mantenimiento_id) { showNotification('Debe seleccionar un tipo de mantenimiento', 'warning'); return; }
+        if (fotosTomadas.length === 0) { showNotification('Debe tomar al menos una foto como evidencia', 'warning'); return; }
+
+        try {
+            const payload = {
+                admin_id: currentUser.id,
+                activo_id: parseInt(activo_id),
+                tipo_mantenimiento_id: parseInt(tipo_mantenimiento_id),
+                fecha_programada: fecha_programada || new Date().toISOString().slice(0,10),
+                observaciones: observaciones,
+                fotos: fotosTomadas
+            };
+            const resp = await fetch(WEBHOOK_CREAR_MANTENIMIENTO, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await resp.json();
+            if (data.success === false) throw new Error(data.error || 'Error al guardar');
+            showNotification(`Mantenimiento registrado con ${fotosTomadas.length} fotos`);
+            fotosTomadas = [];
+            actualizarPreviewFotos();
+            document.getElementById('mantenimientoForm').reset();
+            document.getElementById('activoSelect').value = '';
+            document.getElementById('tipoMantenimientoSelect').value = '';
+            document.getElementById('observaciones').value = '';
+            await iniciarCamara();
+            // Recargar dashboard si está visible
+            if (dashboardLoaded && document.getElementById('dashboardContent').classList.contains('active')) {
+                cargarEstadisticasDashboard();
+                cargarListadoDashboard();
+            }
+        } catch (err) {
+            showNotification('Error al guardar: ' + err.message, 'error');
+        }
+    };
+
+    // ==================== DASHBOARD ====================
+    async function cargarFiltrosDashboard() {
+        try {
+            const [activos, usuarios, tipos] = await Promise.all([
+                apiCall(WEBHOOK_LISTAR_ACTIVOS),
+                apiCall(WEBHOOK_LISTAR_USUARIOS),
+                apiCall(WEBHOOK_LISTAR_TIPOS_MANTENIMIENTO)
+            ]);
+            
+            const activosList = Array.isArray(activos) ? activos : [];
+            const usuariosList = Array.isArray(usuarios) ? usuarios : [];
+            const tiposList = Array.isArray(tipos) ? tipos : [];
+            
+            document.getElementById('filtroActivo').innerHTML = '<option value="">Todos los activos</option>' + 
+                activosList.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
+            document.getElementById('filtroTecnico').innerHTML = '<option value="">Todos los técnicos</option>' + 
+                usuariosList.filter(u => u.rol === 'tecnico').map(u => `<option value="${u.id}">${u.nombre}</option>`).join('');
+            document.getElementById('filtroTipo').innerHTML = '<option value="">Todos los tipos</option>' + 
+                tiposList.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+        } catch (err) {
+            console.error('Error cargando filtros dashboard:', err);
+        }
+    }
+
+    async function cargarEstadisticasDashboard() {
+        try {
+            const data = await apiCall(API_ESTADISTICAS);
+            if (data.success) {
+                document.getElementById('totalMantenimientos').innerText = data.resumen?.total_mantenimientos || 0;
+                document.getElementById('totalFotos').innerText = data.resumen?.total_fotos || 0;
+                document.getElementById('totalTecnicos').innerText = data.resumen?.total_tecnicos || 0;
+                document.getElementById('totalActivos').innerText = data.resumen?.total_activos_atendidos || 0;
+
+                const tipos = data.porTipo || [];
+                if (tipoChart) tipoChart.destroy();
+                tipoChart = new Chart(document.getElementById('tipoChart'), {
+                    type: 'pie',
+                    data: {
+                        labels: tipos.map(t => t.tipo),
+                        datasets: [{ data: tipos.map(t => t.cantidad), backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b'] }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: true }
+                });
+
+                const topTecnicos = data.topTecnicos || [];
+                document.getElementById('topTecnicosTable').innerHTML = `
+                    <thead><tr><th>Técnico</th><th>Mantenimientos</th></thead>
+                    <tbody>${topTecnicos.map(t => `<tr><td>${t.tecnico}</td><td>${t.mantenimientos}</td></tr>`).join('') || '<tr><td colspan="2">Sin datos</td></tr>'}</tbody>
+                `;
+
+                const topActivos = data.topActivos || [];
+                document.getElementById('topActivosTable').innerHTML = `
+                    <thead><tr><th>Activo</th><th>Mantenimientos</th></thead>
+                    <tbody>${topActivos.map(a => `<tr><td>${a.codigo} - ${a.activo}</td><td>${a.mantenimientos}</td></tr>`).join('') || '<tr><td colspan="2">Sin datos</td></tr>'}</tbody>
+                `;
+
+                const tendencia = data.tendencia || [];
+                if (tendenciaChart) tendenciaChart.destroy();
+                tendenciaChart = new Chart(document.getElementById('tendenciaChart'), {
+                    type: 'line',
+                    data: {
+                        labels: tendencia.map(t => t.mes ? new Date(t.mes).toLocaleDateString('es', { month: 'short', year: 'numeric' }) : ''),
+                        datasets: [{ label: 'Mantenimientos', data: tendencia.map(t => t.cantidad), borderColor: '#667eea', fill: false, tension: 0.1 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: true }
+                });
+            }
+        } catch (err) {
+            console.error('Error cargando estadísticas dashboard:', err);
+        }
+    }
+
+    async function cargarListadoDashboard() {
+        showLoading();
+        try {
+            const params = new URLSearchParams();
+            const activoId = document.getElementById('filtroActivo')?.value;
+            const tecnicoId = document.getElementById('filtroTecnico')?.value;
+            const tipoId = document.getElementById('filtroTipo')?.value;
+            const fechaDesde = document.getElementById('filtroFechaDesde')?.value;
+            const fechaHasta = document.getElementById('filtroFechaHasta')?.value;
+            
+            if (activoId) params.append('activo_id', activoId);
+            if (tecnicoId) params.append('tecnico_id', tecnicoId);
+            if (tipoId) params.append('tipo_id', tipoId);
+            if (fechaDesde) params.append('fecha_desde', fechaDesde);
+            if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+            
+            const url = `${API_LISTAR_MANTENIMIENTOS}${params.toString() ? '?' + params.toString() : ''}`;
+            const data = await apiCall(url);
+            
+            const tbody = document.getElementById('mantenimientosTableBody');
+            if (data.mantenimientos && data.mantenimientos.length) {
+                tbody.innerHTML = data.mantenimientos.map(m => `
+                    <tr onclick="verDetalleMantenimiento(${m.id})">
+                        <td>${m.id}</td>
+                        <td>${m.fecha_ejecucion ? new Date(m.fecha_ejecucion).toLocaleString() : '-'}</td>
+                        <td>${m.activo_codigo || '-'} - ${m.activo_nombre || '-'}</td>
+                        <td>${m.tecnico_nombre || '-'}</td>
+                        <td>${m.tipo_nombre || '-'}</td>
+                        <td>${m.observaciones ? (m.observaciones.substring(0, 50) + (m.observaciones.length > 50 ? '...' : '')) : '-'}</td>
+                        <td>${m.total_fotos || 0}</td>
+                        <td><span class="badge bg-success">${m.estado || 'completado'}</span></td>
+                    </tr>
+                `).join('');
+            } else {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">No hay mantenimientos registrados</td></tr>';
+            }
+        } catch (err) {
+            console.error('Error cargando listado dashboard:', err);
+            document.getElementById('mantenimientosTableBody').innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error al cargar datos</td></tr>';
+        } finally {
+            hideLoading();
+        }
+    }
+
+    async function verDetalleMantenimiento(id) {
+        showLoading();
+        try {
+            const data = await apiCall(`${API_DETALLE_MANTENIMIENTO}?id=${id}`);
+            if (data.success) {
+                const m = data.mantenimiento;
+                const fotos = data.fotos || [];
+                
+                document.getElementById('detalleContent').innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Información del mantenimiento</h6>
+                            <table class="table table-sm">
+                                <tr><th>ID:</th><td>${m.id}</td></tr>
+                                <tr><th>Fecha ejecución:</th><td>${m.fecha_ejecucion ? new Date(m.fecha_ejecucion).toLocaleString() : '-'}</td></tr>
+                                <tr><th>Fecha programada:</th><td>${m.fecha_programada || '-'}</td></tr>
+                                <tr><th>Activo:</th><td>${m.activo_codigo || ''} - ${m.activo_nombre || ''}</td></tr>
+                                <tr><th>Ubicación:</th><td>${m.activo_ubicacion || '-'}</td></tr>
+                                <tr><th>Técnico:</th><td>${m.tecnico_nombre || ''} (${m.tecnico_usuario || ''})</td></tr>
+                                <tr><th>Tipo mantenimiento:</th><td>${m.tipo_nombre || ''}</td></tr>
+                                <tr><th>Observaciones:</th><td>${m.observaciones || '-'}</td></tr>
+                                <tr><th>Estado:</th><td><span class="badge bg-success">${m.estado || 'completado'}</span></td></tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Evidencias fotográficas (${fotos.length})</h6>
+                            <div class="foto-gallery">
+                                ${fotos.map(foto => `<img src="${foto.foto_url}" alt="Foto" onclick="verFotoAmpliada('${foto.foto_url}')">`).join('') || '<p>No hay fotos</p>'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                new bootstrap.Modal(document.getElementById('detalleModal')).show();
+            } else {
+                showNotification('Error al cargar detalle', 'error');
+            }
+        } catch (err) {
+            showNotification('Error al cargar detalle: ' + err.message, 'error');
+        } finally {
+            hideLoading();
+        }
+    }
+
+    function verFotoAmpliada(url) {
+        document.getElementById('fotoAmpliada').src = url;
+        new bootstrap.Modal(document.getElementById('fotoModal')).show();
+    }
+
+    // Eventos del dashboard
+    if (document.getElementById('btnAplicarFiltros')) {
+        document.getElementById('btnAplicarFiltros').addEventListener('click', cargarListadoDashboard);
+        document.getElementById('btnLimpiarFiltros').addEventListener('click', () => {
+            if (document.getElementById('filtroActivo')) document.getElementById('filtroActivo').value = '';
+            if (document.getElementById('filtroTecnico')) document.getElementById('filtroTecnico').value = '';
+            if (document.getElementById('filtroTipo')) document.getElementById('filtroTipo').value = '';
+            if (document.getElementById('filtroFechaDesde')) document.getElementById('filtroFechaDesde').value = '';
+            if (document.getElementById('filtroFechaHasta')) document.getElementById('filtroFechaHasta').value = '';
+            cargarListadoDashboard();
+        });
+    }
+
+    // Cargar dashboard al abrir la pestaña
+    document.getElementById('dashboard-tab').addEventListener('shown.bs.tab', function() {
+        if (!dashboardLoaded) {
+            cargarFiltrosDashboard();
+            cargarEstadisticasDashboard();
+            cargarListadoDashboard();
+            dashboardLoaded = true;
+        } else {
+            cargarListadoDashboard();
+        }
+    });
+
+    // Inicialización
+    (function init() {
+        const stored = localStorage.getItem('currentUser');
+        if (stored) {
+            try {
+                currentUser = JSON.parse(stored);
+                showDashboard();
+            } catch(e) {}
+        }
+    })();
+</script>
+</body>
+</html>
