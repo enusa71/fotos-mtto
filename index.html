@@ -914,50 +914,54 @@
         }
     }
 
-    async function cargarListadoDashboard() {
-        showLoading();
-        try {
-            const params = new URLSearchParams();
-            const activoId = document.getElementById('filtroActivo')?.value;
-            const tecnicoId = document.getElementById('filtroTecnico')?.value;
-            const tipoId = document.getElementById('filtroTipo')?.value;
-            const fechaDesde = document.getElementById('filtroFechaDesde')?.value;
-            const fechaHasta = document.getElementById('filtroFechaHasta')?.value;
-            
-            if (activoId) params.append('activo_id', activoId);
-            if (tecnicoId) params.append('tecnico_id', tecnicoId);
-            if (tipoId) params.append('tipo_id', tipoId);
-            if (fechaDesde) params.append('fecha_desde', fechaDesde);
-            if (fechaHasta) params.append('fecha_hasta', fechaHasta);
-            
-            const url = `${API_LISTAR_MANTENIMIENTOS}${params.toString() ? '?' + params.toString() : ''}`;
-            const data = await apiCall(url);
-            
-            const tbody = document.getElementById('mantenimientosTableBody');
-            if (data.mantenimientos && data.mantenimientos.length) {
-                tbody.innerHTML = data.mantenimientos.map(m => `
-                    <tr onclick="verDetalleMantenimiento(${m.id})">
-                        <td>${m.id}</td>
-                        <td>${m.fecha_ejecucion ? new Date(m.fecha_ejecucion).toLocaleString() : '-'}</td>
-                        <td>${m.activo_codigo || '-'} - ${m.activo_nombre || '-'}</td>
-                        <td>${m.tecnico_nombre || '-'}</td>
-                        <td>${m.tipo_nombre || '-'}</td>
-                        <td>${m.observaciones ? (m.observaciones.substring(0, 50) + (m.observaciones.length > 50 ? '...' : '')) : '-'}</td>
-                        <td>${m.total_fotos || 0}</td>
-                        <td><span class="badge bg-success">${m.estado || 'completado'}</span></td>
-                    </tr>
-                `).join('');
-            } else {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center">No hay mantenimientos registrados</td></tr>';
-            }
-        } catch (err) {
-            console.error('Error cargando listado dashboard:', err);
-            document.getElementById('mantenimientosTableBody').innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error al cargar datos</td></tr>';
-        } finally {
-            hideLoading();
+async function cargarListadoDashboard() {
+    showLoading();
+    try {
+        // Construir parámetros para la URL (GET)
+        const params = new URLSearchParams();
+        
+        const activoId = document.getElementById('filtroActivo')?.value;
+        const tecnicoId = document.getElementById('filtroTecnico')?.value;
+        const tipoId = document.getElementById('filtroTipo')?.value;
+        const fechaDesde = document.getElementById('filtroFechaDesde')?.value;
+        const fechaHasta = document.getElementById('filtroFechaHasta')?.value;
+        
+        if (activoId && activoId !== '') params.append('activo_id', activoId);
+        if (tecnicoId && tecnicoId !== '') params.append('tecnico_id', tecnicoId);
+        if (tipoId && tipoId !== '') params.append('tipo_id', tipoId);
+        if (fechaDesde && fechaDesde !== '') params.append('fecha_desde', fechaDesde);
+        if (fechaHasta && fechaHasta !== '') params.append('fecha_hasta', fechaHasta);
+        
+        // URL con parámetros GET (sin body)
+        const url = `${API_LISTAR_MANTENIMIENTOS}${params.toString() ? '?' + params.toString() : ''}`;
+        
+        const response = await fetch(url, { method: 'GET' });
+        const data = await response.json();
+        
+        const tbody = document.getElementById('mantenimientosTableBody');
+        if (data.mantenimientos && data.mantenimientos.length) {
+            tbody.innerHTML = data.mantenimientos.map(m => `
+                <tr onclick="verDetalleMantenimiento(${m.id})">
+                    <td>${m.id}</td>
+                    <td>${m.fecha_ejecucion ? new Date(m.fecha_ejecucion).toLocaleString() : '-'}</td>
+                    <td>${m.activo_codigo || '-'} - ${m.activo_nombre || '-'}</td>
+                    <td>${m.tecnico_nombre || '-'}</td>
+                    <td>${m.tipo_nombre || '-'}</td>
+                    <td>${m.observaciones ? (m.observaciones.substring(0, 50) + (m.observaciones.length > 50 ? '...' : '')) : '-'}</td>
+                    <td>${m.total_fotos || 0}</td>
+                    <td><span class="badge bg-success">${m.estado || 'completado'}</span></td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center">No hay mantenimientos registrados</td></tr>';
         }
+    } catch (err) {
+        console.error('Error cargando listado dashboard:', err);
+        document.getElementById('mantenimientosTableBody').innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error al cargar datos</td></tr>';
+    } finally {
+        hideLoading();
     }
-
+}  
     async function verDetalleMantenimiento(id) {
         showLoading();
         try {
