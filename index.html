@@ -262,7 +262,7 @@
                             <div class="card-body">
                                 <table class="table table-sm" id="topTecnicosTable">
                                     <thead><tr><th>Técnico</th><th>Mantenimientos</th></thead>
-                                    <tbody><tr><td colspan="2">Cargando......</tbody>
+                                    <tbody><tr><td colspan="2">Cargando...</td></tr></tbody>
                                 </table>
                             </div>
                         </div>
@@ -275,7 +275,7 @@
                             <div class="card-body">
                                 <table class="table table-sm" id="topActivosTable">
                                     <thead><tr><th>Activo</th><th>Mantenimientos</th></thead>
-                                    <tbody><tr><td colspan="2">Cargando...</tbody>
+                                    <tbody><tr><td colspan="2">Cargando...</td></tr></tbody>
                                 </table>
                             </div>
                         </div>
@@ -337,7 +337,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="mantenimientosTableBody">
-                                    <tr><td colspan="8" class="text-center">Cargando...</td></tr>
+                                    <tr><td colspan="8">Cargando...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -658,6 +658,7 @@
         document.querySelectorAll('.editar-activo').forEach(btn => btn.onclick = () => editarActivo(btn.dataset.id));
         document.querySelectorAll('.eliminar-activo').forEach(btn => btn.onclick = () => eliminarActivo(btn.dataset.id));
         
+        // También actualizar filtros del dashboard si ya está cargado
         if (document.getElementById('filtroActivo')) {
             cargarFiltrosDashboard();
         }
@@ -831,6 +832,7 @@
             document.getElementById('tipoMantenimientoSelect').value = '';
             document.getElementById('observaciones').value = '';
             await iniciarCamara();
+            // Recargar dashboard si está visible
             if (dashboardLoaded && document.getElementById('dashboardContent').classList.contains('active')) {
                 cargarEstadisticasDashboard();
                 cargarListadoDashboard();
@@ -887,13 +889,13 @@
                 const topTecnicos = data.topTecnicos || [];
                 document.getElementById('topTecnicosTable').innerHTML = `
                     <thead><tr><th>Técnico</th><th>Mantenimientos</th></thead>
-                    <tbody>${topTecnicos.map(t => `<tr><td>${t.tecnico}</td><td>${t.mantenimientos}</td>`).join('') || '<tr><td colspan="2">Sin datos</td>'}</tbody>
+                    <tbody>${topTecnicos.map(t => `<tr><td>${t.tecnico}</td><td>${t.mantenimientos}</td></tr>`).join('') || '<tr><td colspan="2">Sin datos</td></tr>'}</tbody>
                 `;
 
                 const topActivos = data.topActivos || [];
                 document.getElementById('topActivosTable').innerHTML = `
                     <thead><tr><th>Activo</th><th>Mantenimientos</th></thead>
-                    <tbody>${topActivos.map(a => `<tr><td>${a.codigo} - ${a.activo}</td><td>${a.mantenimientos}</td>`).join('') || '<tr><td colspan="2">Sin datos</td>'}</tbody>
+                    <tbody>${topActivos.map(a => `<tr><td>${a.codigo} - ${a.activo}</td><td>${a.mantenimientos}</td></tr>`).join('') || '<tr><td colspan="2">Sin datos</td></tr>'}</tbody>
                 `;
 
                 const tendencia = data.tendencia || [];
@@ -915,27 +917,21 @@
     async function cargarListadoDashboard() {
         showLoading();
         try {
-            const payload = {};
-            
+            const params = new URLSearchParams();
             const activoId = document.getElementById('filtroActivo')?.value;
             const tecnicoId = document.getElementById('filtroTecnico')?.value;
             const tipoId = document.getElementById('filtroTipo')?.value;
             const fechaDesde = document.getElementById('filtroFechaDesde')?.value;
             const fechaHasta = document.getElementById('filtroFechaHasta')?.value;
             
-            if (activoId && activoId !== '') payload.activo_id = parseInt(activoId);
-            if (tecnicoId && tecnicoId !== '') payload.tecnico_id = parseInt(tecnicoId);
-            if (tipoId && tipoId !== '') payload.tipo_id = parseInt(tipoId);
-            if (fechaDesde && fechaDesde !== '') payload.fecha_desde = fechaDesde;
-            if (fechaHasta && fechaHasta !== '') payload.fecha_hasta = fechaHasta;
+            if (activoId) params.append('activo_id', activoId);
+            if (tecnicoId) params.append('tecnico_id', tecnicoId);
+            if (tipoId) params.append('tipo_id', tipoId);
+            if (fechaDesde) params.append('fecha_desde', fechaDesde);
+            if (fechaHasta) params.append('fecha_hasta', fechaHasta);
             
-            const response = await fetch(API_LISTAR_MANTENIMIENTOS, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            
-            const data = await response.json();
+            const url = `${API_LISTAR_MANTENIMIENTOS}${params.toString() ? '?' + params.toString() : ''}`;
+            const data = await apiCall(url);
             
             const tbody = document.getElementById('mantenimientosTableBody');
             if (data.mantenimientos && data.mantenimientos.length) {
@@ -1023,6 +1019,7 @@
         });
     }
 
+    // Cargar dashboard al abrir la pestaña
     document.getElementById('dashboard-tab').addEventListener('shown.bs.tab', function() {
         if (!dashboardLoaded) {
             cargarFiltrosDashboard();
@@ -1034,6 +1031,7 @@
         }
     });
 
+    // Inicialización
     (function init() {
         const stored = localStorage.getItem('currentUser');
         if (stored) {
