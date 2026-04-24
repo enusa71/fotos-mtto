@@ -262,7 +262,7 @@
                             <div class="card-body">
                                 <table class="table table-sm" id="topTecnicosTable">
                                     <thead><tr><th>Técnico</th><th>Mantenimientos</th></thead>
-                                    <tbody><tr><td colspan="2">Cargando...</td></tr></tbody>
+                                    <tbody><tr><td colspan="2">Cargando......</tbody>
                                 </table>
                             </div>
                         </div>
@@ -275,7 +275,7 @@
                             <div class="card-body">
                                 <table class="table table-sm" id="topActivosTable">
                                     <thead><tr><th>Activo</th><th>Mantenimientos</th></thead>
-                                    <tbody><td><td colspan="2">Cargando...</td>;</tbody>
+                                    <tbody><tr><td colspan="2">Cargando...</tbody>
                                 </table>
                             </div>
                         </div>
@@ -337,7 +337,8 @@
                                     </tr>
                                 </thead>
                                 <tbody id="mantenimientosTableBody">
-                                    <tr><td colspan="8">Cargando......</td>;</tbody>
+                                    <tr><td colspan="8" class="text-center">Cargando...</td></tr>
+                                </tbody>
                             </table>
                         </div>
                     </div>
@@ -583,7 +584,7 @@
     async function cargarUsuarios() {
         const data = await apiCall(WEBHOOK_LISTAR_USUARIOS);
         const tbody = document.getElementById('usuariosTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay usuarios registrados</td>'; return; }
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay usuarios registrados</td></tr>'; return; }
         tbody.innerHTML = data.map(u => `
             <tr>
                 <td>${u.id}</td>
@@ -642,7 +643,7 @@
     async function cargarActivos() {
         const data = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
         const tbody = document.getElementById('activosTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay activos registrados</td>'; return; }
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay activos registrados</td></tr>'; return; }
         tbody.innerHTML = data.map(a => `
             <tr>
                 <td>${a.id}</td>
@@ -657,7 +658,6 @@
         document.querySelectorAll('.editar-activo').forEach(btn => btn.onclick = () => editarActivo(btn.dataset.id));
         document.querySelectorAll('.eliminar-activo').forEach(btn => btn.onclick = () => eliminarActivo(btn.dataset.id));
         
-        // También actualizar filtros del dashboard si ya está cargado
         if (document.getElementById('filtroActivo')) {
             cargarFiltrosDashboard();
         }
@@ -831,7 +831,6 @@
             document.getElementById('tipoMantenimientoSelect').value = '';
             document.getElementById('observaciones').value = '';
             await iniciarCamara();
-            // Recargar dashboard si está visible
             if (dashboardLoaded && document.getElementById('dashboardContent').classList.contains('active')) {
                 cargarEstadisticasDashboard();
                 cargarListadoDashboard();
@@ -894,7 +893,7 @@
                 const topActivos = data.topActivos || [];
                 document.getElementById('topActivosTable').innerHTML = `
                     <thead><tr><th>Activo</th><th>Mantenimientos</th></thead>
-                    <tbody>${topActivos.map(a => `<td><td>${a.codigo} - ${a.activo}</td><td>${a.mantenimientos}</td>`).join('') || '<tr><td colspan="2">Sin datos</td>'}</tbody>
+                    <tbody>${topActivos.map(a => `<tr><td>${a.codigo} - ${a.activo}</td><td>${a.mantenimientos}</td>`).join('') || '<tr><td colspan="2">Sin datos</td>'}</tbody>
                 `;
 
                 const tendencia = data.tendencia || [];
@@ -916,7 +915,6 @@
     async function cargarListadoDashboard() {
         showLoading();
         try {
-            // Construir el payload para enviar en el body
             const payload = {};
             
             const activoId = document.getElementById('filtroActivo')?.value;
@@ -931,7 +929,6 @@
             if (fechaDesde && fechaDesde !== '') payload.fecha_desde = fechaDesde;
             if (fechaHasta && fechaHasta !== '') payload.fecha_hasta = fechaHasta;
             
-            // Enviar como POST con body
             const response = await fetch(API_LISTAR_MANTENIMIENTOS, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -955,11 +952,11 @@
                     </tr>
                 `).join('');
             } else {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center">No hay mantenimientos registrados</td>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">No hay mantenimientos registrados</td></tr>';
             }
         } catch (err) {
             console.error('Error cargando listado dashboard:', err);
-            document.getElementById('mantenimientosTableBody').innerHTML = '<table><td colspan="8" class="text-center text-danger">Error al cargar datos</td>';
+            document.getElementById('mantenimientosTableBody').innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error al cargar datos</td></tr>';
         } finally {
             hideLoading();
         }
@@ -1026,7 +1023,6 @@
         });
     }
 
-    // Cargar dashboard al abrir la pestaña
     document.getElementById('dashboard-tab').addEventListener('shown.bs.tab', function() {
         if (!dashboardLoaded) {
             cargarFiltrosDashboard();
@@ -1038,7 +1034,6 @@
         }
     });
 
-    // Inicialización
     (function init() {
         const stored = localStorage.getItem('currentUser');
         if (stored) {
