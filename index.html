@@ -275,7 +275,7 @@
                             <div class="card-body">
                                 <table class="table table-sm" id="topActivosTable">
                                     <thead><tr><th>Activo</th><th>Mantenimientos</th></thead>
-                                    <tbody><tr><td colspan="2">Cargando...</td></tr></tbody>
+                                    <tbody><td><td colspan="2">Cargando...</td>;</tbody>
                                 </table>
                             </div>
                         </div>
@@ -337,8 +337,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="mantenimientosTableBody">
-                                    <tr><td colspan="8">Cargando...</td></tr>
-                                </tbody>
+                                    <tr><td colspan="8">Cargando......</td>;</tbody>
                             </table>
                         </div>
                     </div>
@@ -584,7 +583,7 @@
     async function cargarUsuarios() {
         const data = await apiCall(WEBHOOK_LISTAR_USUARIOS);
         const tbody = document.getElementById('usuariosTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay usuarios registrados</td></tr>'; return; }
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay usuarios registrados</td>'; return; }
         tbody.innerHTML = data.map(u => `
             <tr>
                 <td>${u.id}</td>
@@ -643,7 +642,7 @@
     async function cargarActivos() {
         const data = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
         const tbody = document.getElementById('activosTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay activos registrados</td></tr>'; return; }
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay activos registrados</td>'; return; }
         tbody.innerHTML = data.map(a => `
             <tr>
                 <td>${a.id}</td>
@@ -889,13 +888,13 @@
                 const topTecnicos = data.topTecnicos || [];
                 document.getElementById('topTecnicosTable').innerHTML = `
                     <thead><tr><th>Técnico</th><th>Mantenimientos</th></thead>
-                    <tbody>${topTecnicos.map(t => `<tr><td>${t.tecnico}</td><td>${t.mantenimientos}</td></tr>`).join('') || '<tr><td colspan="2">Sin datos</td></tr>'}</tbody>
+                    <tbody>${topTecnicos.map(t => `<tr><td>${t.tecnico}</td><td>${t.mantenimientos}</td>`).join('') || '<tr><td colspan="2">Sin datos</td>'}</tbody>
                 `;
 
                 const topActivos = data.topActivos || [];
                 document.getElementById('topActivosTable').innerHTML = `
                     <thead><tr><th>Activo</th><th>Mantenimientos</th></thead>
-                    <tbody>${topActivos.map(a => `<tr><td>${a.codigo} - ${a.activo}</td><td>${a.mantenimientos}</td></tr>`).join('') || '<tr><td colspan="2">Sin datos</td></tr>'}</tbody>
+                    <tbody>${topActivos.map(a => `<td><td>${a.codigo} - ${a.activo}</td><td>${a.mantenimientos}</td>`).join('') || '<tr><td colspan="2">Sin datos</td>'}</tbody>
                 `;
 
                 const tendencia = data.tendencia || [];
@@ -917,21 +916,29 @@
     async function cargarListadoDashboard() {
         showLoading();
         try {
-            const params = new URLSearchParams();
+            // Construir el payload para enviar en el body
+            const payload = {};
+            
             const activoId = document.getElementById('filtroActivo')?.value;
             const tecnicoId = document.getElementById('filtroTecnico')?.value;
             const tipoId = document.getElementById('filtroTipo')?.value;
             const fechaDesde = document.getElementById('filtroFechaDesde')?.value;
             const fechaHasta = document.getElementById('filtroFechaHasta')?.value;
             
-            if (activoId) params.append('activo_id', activoId);
-            if (tecnicoId) params.append('tecnico_id', tecnicoId);
-            if (tipoId) params.append('tipo_id', tipoId);
-            if (fechaDesde) params.append('fecha_desde', fechaDesde);
-            if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+            if (activoId && activoId !== '') payload.activo_id = parseInt(activoId);
+            if (tecnicoId && tecnicoId !== '') payload.tecnico_id = parseInt(tecnicoId);
+            if (tipoId && tipoId !== '') payload.tipo_id = parseInt(tipoId);
+            if (fechaDesde && fechaDesde !== '') payload.fecha_desde = fechaDesde;
+            if (fechaHasta && fechaHasta !== '') payload.fecha_hasta = fechaHasta;
             
-            const url = `${API_LISTAR_MANTENIMIENTOS}${params.toString() ? '?' + params.toString() : ''}`;
-            const data = await apiCall(url);
+            // Enviar como POST con body
+            const response = await fetch(API_LISTAR_MANTENIMIENTOS, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            
+            const data = await response.json();
             
             const tbody = document.getElementById('mantenimientosTableBody');
             if (data.mantenimientos && data.mantenimientos.length) {
@@ -948,11 +955,11 @@
                     </tr>
                 `).join('');
             } else {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center">No hay mantenimientos registrados</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">No hay mantenimientos registrados</td>';
             }
         } catch (err) {
             console.error('Error cargando listado dashboard:', err);
-            document.getElementById('mantenimientosTableBody').innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error al cargar datos</td></tr>';
+            document.getElementById('mantenimientosTableBody').innerHTML = '<table><td colspan="8" class="text-center text-danger">Error al cargar datos</td>';
         } finally {
             hideLoading();
         }
