@@ -867,53 +867,57 @@
     }
 
     async function cargarEstadisticasDashboard() {
-        try {
-            const data = await apiCall(API_ESTADISTICAS);
-            if (data.success) {
-                document.getElementById('totalMantenimientos').innerText = data.resumen?.total_mantenimientos || 0;
-                document.getElementById('totalFotos').innerText = data.resumen?.total_fotos || 0;
-                document.getElementById('totalTecnicos').innerText = data.resumen?.total_tecnicos || 0;
-                document.getElementById('totalActivos').innerText = data.resumen?.total_activos_atendidos || 0;
+    try {
+        const data = await apiCall(API_ESTADISTICAS);
+        if (data.success) {
+            // Leer el resumen (totales)
+            document.getElementById('totalMantenimientos').innerText = data.resumen?.total_mantenimientos || 0;
+            document.getElementById('totalFotos').innerText = data.resumen?.total_fotos || 0;
+            document.getElementById('totalTecnicos').innerText = data.resumen?.total_tecnicos || 0;
+            document.getElementById('totalActivos').innerText = data.resumen?.total_activos_atendidos || 0;
 
-                const tipos = data.porTipo || [];
-                if (tipoChart) tipoChart.destroy();
-                tipoChart = new Chart(document.getElementById('tipoChart'), {
-                    type: 'pie',
-                    data: {
-                        labels: tipos.map(t => t.tipo),
-                        datasets: [{ data: tipos.map(t => t.cantidad), backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b'] }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: true }
-                });
+            // Gráfico de tipos (porTipo)
+            const tipos = data.porTipo || [];
+            if (tipoChart) tipoChart.destroy();
+            tipoChart = new Chart(document.getElementById('tipoChart'), {
+                type: 'pie',
+                data: {
+                    labels: tipos.map(t => t.tipo),
+                    datasets: [{ data: tipos.map(t => t.cantidad), backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b'] }]
+                },
+                options: { responsive: true }
+            });
 
-                const topTecnicos = data.topTecnicos || [];
-                document.getElementById('topTecnicosTable').innerHTML = `
-                    <thead><tr><th>Técnico</th><th>Mantenimientos</th></thead>
-                    <tbody>${topTecnicos.map(t => `<tr><td>${t.tecnico}</td><td>${t.mantenimientos}</td></tr>`).join('') || '<tr><td colspan="2">Sin datos</td></tr>'}</tbody>
-                `;
+            // Tabla top técnicos
+            const topTecnicos = data.topTecnicos || [];
+            document.getElementById('topTecnicosTable').innerHTML = `
+                <thead><tr><th>Técnico</th><th>Mantenimientos</th></tr></thead>
+                <tbody>${topTecnicos.map(t => `<tr><td>${t.tecnico}</td><td>${t.mantenimientos}</td></tr>`).join('') || '<tr><td colspan="2">Sin datos</td>'}</tbody>
+            `;
 
-                const topActivos = data.topActivos || [];
-                document.getElementById('topActivosTable').innerHTML = `
-                    <thead><tr><th>Activo</th><th>Mantenimientos</th></thead>
-                    <tbody>${topActivos.map(a => `<tr><td>${a.codigo} - ${a.activo}</td><td>${a.mantenimientos}</td></tr>`).join('') || '<tr><td colspan="2">Sin datos</td></tr>'}</tbody>
-                `;
+            // Tabla top activos
+            const topActivos = data.topActivos || [];
+            document.getElementById('topActivosTable').innerHTML = `
+                <thead><tr><th>Activo</th><th>Mantenimientos</th></table></thead>
+                <tbody>${topActivos.map(a => `<tr><td>${a.codigo} - ${a.activo}</td><td>${a.mantenimientos}</td>`).join('') || '<tr><td colspan="2">Sin datos</td>'}</tbody>
+            `;
 
-                const tendencia = data.tendencia || [];
-                if (tendenciaChart) tendenciaChart.destroy();
-                tendenciaChart = new Chart(document.getElementById('tendenciaChart'), {
-                    type: 'line',
-                    data: {
-                        labels: tendencia.map(t => t.mes ? new Date(t.mes).toLocaleDateString('es', { month: 'short', year: 'numeric' }) : ''),
-                        datasets: [{ label: 'Mantenimientos', data: tendencia.map(t => t.cantidad), borderColor: '#667eea', fill: false, tension: 0.1 }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: true }
-                });
-            }
-        } catch (err) {
-            console.error('Error cargando estadísticas dashboard:', err);
+            // Gráfico de tendencia
+            const tendencia = data.tendencia || [];
+            if (tendenciaChart) tendenciaChart.destroy();
+            tendenciaChart = new Chart(document.getElementById('tendenciaChart'), {
+                type: 'line',
+                data: {
+                    labels: tendencia.map(t => t.mes ? new Date(t.mes).toLocaleDateString('es', { month: 'short', year: 'numeric' }) : ''),
+                    datasets: [{ label: 'Mantenimientos', data: tendencia.map(t => t.cantidad), borderColor: '#667eea', fill: false }]
+                },
+                options: { responsive: true }
+            });
         }
+    } catch (err) {
+        console.error('Error cargando estadísticas:', err);
     }
-
+}
 async function cargarListadoDashboard() {
     showLoading();
     try {
