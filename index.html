@@ -1600,6 +1600,30 @@ function cambiarPagina(delta) {
         renderizarPagina();
     });
     // 
+    // ========== LIMPIAR MODAL DE ACTIVOS ==========
+// Opción 1: Al hacer clic en Nuevo Activo
+const btnNuevoActivo = document.querySelector('[data-bs-target="#modalActivo"]');
+if (btnNuevoActivo) {
+    btnNuevoActivo.addEventListener('click', function() {
+        document.getElementById('activoId').value = '';
+        document.getElementById('activoCodigo').value = '';
+        document.getElementById('activoNombre').value = '';
+        document.getElementById('activoTipo').value = '';
+        document.getElementById('activoUbicacion').value = '';
+    });
+}
+
+// Opción 2: Al cerrar el modal
+const modalActivo = document.getElementById('modalActivo');
+if (modalActivo) {
+    modalActivo.addEventListener('hidden.bs.modal', function() {
+        document.getElementById('activoId').value = '';
+        document.getElementById('activoCodigo').value = '';
+        document.getElementById('activoNombre').value = '';
+        document.getElementById('activoTipo').value = '';
+        document.getElementById('activoUbicacion').value = '';
+    });
+}
     // Inicialización
     (function init() {
         const stored = localStorage.getItem('currentUser');
