@@ -1306,11 +1306,10 @@ body.tecnico-role #myTabContent {
     }
 
     document.getElementById('btnGuardarMantenimiento').onclick = async () => {
-    // Verificar que los elementos existan
-const activoSelect = document.getElementById('activoSelect');
-const tipoSelect = document.getElementById('tipoMantenimientoSelect');
-const fechaInput = document.getElementById('fechaProgramada');
-const observacionesTextarea = document.getElementById('observaciones');
+    // Verificar elementos
+    const activoSelect = document.getElementById('activoSelect');
+    const tipoSelect = document.getElementById('tipoMantenimientoSelect');
+    const observacionesTextarea = document.getElementById('observaciones');
 
 if (!activoSelect) { showNotification('Error: Selector de activo no encontrado', 'error'); return; }
 if (!tipoSelect) { showNotification('Error: Selector de tipo no encontrado', 'error'); return; }
