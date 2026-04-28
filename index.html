@@ -966,49 +966,22 @@ async function cargarListadoDashboard() {
         hideLoading();
     }
 }  
-    async function verDetalleMantenimiento(id) {
-        showLoading();
-        try {
-            const data = await apiCall(`${API_DETALLE_MANTENIMIENTO}?id=${id}`);
-            if (data.success) {
-                const m = data.mantenimiento;
-                const fotos = data.fotos || [];
-                
-                document.getElementById('detalleContent').innerHTML = `
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>Información del mantenimiento</h6>
-                            <table class="table table-sm">
-                                <tr><th>ID:</th><td>${m.id}</td></tr>
-                                <tr><th>Fecha ejecución:</th><td>${m.fecha_ejecucion ? new Date(m.fecha_ejecucion).toLocaleString() : '-'}</td></tr>
-                                <tr><th>Fecha programada:</th><td>${m.fecha_programada || '-'}</td></tr>
-                                <tr><th>Activo:</th><td>${m.activo_codigo || ''} - ${m.activo_nombre || ''}</td></tr>
-                                <tr><th>Ubicación:</th><td>${m.activo_ubicacion || '-'}</td></tr>
-                                <tr><th>Técnico:</th><td>${m.tecnico_nombre || ''} (${m.tecnico_usuario || ''})</td></tr>
-                                <tr><th>Tipo mantenimiento:</th><td>${m.tipo_nombre || ''}</td></tr>
-                                <tr><th>Observaciones:</th><td>${m.observaciones || '-'}</td></tr>
-                                <tr><th>Estado:</th><td><span class="badge bg-success">${m.estado || 'completado'}</span></td></tr>
-                            </table>
-                        </div>
-                        <div class="col-md-6">
-                            <h6>Evidencias fotográficas (${fotos.length})</h6>
-                            <div class="foto-gallery">
-                                ${fotos.map(foto => `<img src="${foto.foto_url}" alt="Foto" onclick="verFotoAmpliada('${foto.foto_url}')">`).join('') || '<p>No hay fotos</p>'}
-                            </div>
-                        </div>
-                    </div>
-                `;
-                new bootstrap.Modal(document.getElementById('detalleModal')).show();
-            } else {
-                showNotification('Error al cargar detalle', 'error');
-            }
-        } catch (err) {
-            showNotification('Error al cargar detalle: ' + err.message, 'error');
-        } finally {
-            hideLoading();
+async function verDetalleMantenimiento(id) {
+    showLoading();
+    try {
+        const data = await apiCall(`${API_DETALLE_MANTENIMIENTO}?id=${id}`);
+        console.log('Respuesta completa del detalle:', data);
+        console.log('Cantidad de fotos recibidas:', data.fotos?.length);
+        
+        if (data.success) {
+            const m = data.mantenimiento;
+            const fotos = data.fotos || [];
+            
+            // Resto del código igual...
         }
     }
-
+}
+    
     function verFotoAmpliada(url) {
         document.getElementById('fotoAmpliada').src = url;
         new bootstrap.Modal(document.getElementById('fotoModal')).show();
