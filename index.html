@@ -1599,6 +1599,23 @@ function cambiarPagina(delta) {
         paginaActual = 1;
         renderizarPagina();
     });
+    // ========== LIMPIAR MODAL DE USUARIO ==========
+// Al cargar la página, configurar el modal para que se limpie al abrir "Nuevo Usuario"
+const modalUsuarioElement = document.getElementById('modalUsuario');
+if (modalUsuarioElement) {
+    modalUsuarioElement.addEventListener('show.bs.modal', function(e) {
+        const button = e.relatedTarget;
+        // Si se abre con el botón "Nuevo Usuario" (no tiene data-id)
+        if (!button || !button.getAttribute('data-id')) {
+            document.getElementById('usuarioId').value = '';
+            document.getElementById('usuarioUsername').value = '';
+            document.getElementById('usuarioNombre').value = '';
+            document.getElementById('usuarioPassword').value = '';
+            document.getElementById('usuarioRol').value = 'tecnico';
+            document.getElementById('usuarioActivo').checked = true;
+        }
+    });
+}
     // =====================================================
 
     // Inicialización
