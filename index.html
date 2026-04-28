@@ -1376,7 +1376,34 @@ function cambiarPagina(delta) {
             cargarListadoDashboard();
         }
     });
+        // ========== AGREGAR AQUÍ LOS EVENT LISTENERS ==========
+    // Eventos de paginación
+    const btnAnterior = document.getElementById('btnPaginaAnterior');
+    const btnSiguiente = document.getElementById('btnPaginaSiguiente');
+    const paginaLimit = document.getElementById('paginaLimit');
 
+    if (btnAnterior) btnAnterior.addEventListener('click', () => cambiarPagina(-1));
+    if (btnSiguiente) btnSiguiente.addEventListener('click', () => cambiarPagina(1));
+    if (paginaLimit) paginaLimit.addEventListener('change', function() {
+        registrosPorPagina = parseInt(this.value);
+        paginaActual = 1;
+        renderizarPagina();
+    });
+    // =====================================================
+
+    // Inicialización
+    (function init() {
+        const stored = localStorage.getItem('currentUser');
+        if (stored) {
+            try {
+                currentUser = JSON.parse(stored);
+                showDashboard();
+            } catch(e) {}
+        }
+    })();
+</script>
+</body>
+</html>
     // Inicialización
     (function init() {
         const stored = localStorage.getItem('currentUser');
