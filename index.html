@@ -1166,28 +1166,21 @@ async function editarUsuario(id) {
     
     try {
         const activos = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
-        console.log('Activos recibidos:', activos);
-        
         const activo = activos.find(a => a.id == id);
-        console.log('Activo encontrado:', activo);
         
         if (activo) {
-            // Asignar valores a los campos
             document.getElementById('activoId').value = activo.id;
             document.getElementById('activoCodigo').value = activo.codigo;
             document.getElementById('activoNombre').value = activo.nombre;
             document.getElementById('activoTipo').value = activo.tipo;
             document.getElementById('activoUbicacion').value = activo.ubicacion || '';
             
-            console.log('Campos llenados correctamente');
-            console.log('Código:', document.getElementById('activoCodigo').value);
-            console.log('Nombre:', document.getElementById('activoNombre').value);
-            
-            // Mostrar modal
-            const modal = new bootstrap.Modal(document.getElementById('modalActivo'));
-            modal.show();
+            // Pequeño retraso antes de mostrar el modal
+            setTimeout(() => {
+                const modal = new bootstrap.Modal(document.getElementById('modalActivo'));
+                modal.show();
+            }, 50);
         } else {
-            console.log('ERROR: Activo no encontrado con ID', id);
             showNotification('Activo no encontrado', 'error');
         }
     } catch (err) {
