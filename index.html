@@ -1196,24 +1196,58 @@ body.tecnico-role #myTabContent {
     }
 }
 
-    document.getElementById('guardarActivoBtn').onclick = async () => {
-        const id = document.getElementById('activoId').value;
-        const data = {
-            admin_id: currentUser.id,
-            codigo: document.getElementById('activoCodigo').value,
-            nombre: document.getElementById('activoNombre').value,
-            tipo: document.getElementById('activoTipo').value,
-            ubicacion: document.getElementById('activoUbicacion').value
-        };
-        if (id) data.id = id;
-        const url = id ? WEBHOOK_ACTUALIZAR_ACTIVO : WEBHOOK_CREAR_ACTIVO;
+ document.getElementById('guardarActivoBtn').onclick = async () => {
+    // Obtener valores
+    const id = document.getElementById('activoId').value;
+    const codigo = document.getElementById('activoCodigo').value;
+    const nombre = document.getElementById('activoNombre').value;
+    const tipo = document.getElementById('activoTipo').value;
+    const ubicacion = document.getElementById('activoUbicacion').value;
+    
+    // ========== VALIDACIONES ==========
+    if (!codigo || codigo.trim() === '') {
+        showNotification('El campo Código es obligatorio', 'warning');
+        return;
+    }
+    if (!nombre || nombre.trim() === '') {
+        showNotification('El campo Nombre es obligatorio', 'warning');
+        return;
+    }
+    if (!tipo || tipo.trim() === '') {
+        showNotification('El campo Tipo es obligatorio', 'warning');
+        return;
+    }
+    // ==================================
+    
+    const data = {
+        admin_id: currentUser.id,
+        codigo: codigo,
+        nombre: nombre,
+        tipo: tipo,
+        ubicacion: ubicacion
+    };
+    if (id) data.id = id;
+    
+    const url = id ? WEBHOOK_ACTUALIZAR_ACTIVO : WEBHOOK_CREAR_ACTIVO;
+    
+    try {
         await apiCall(url, { method: 'POST', body: JSON.stringify(data) });
-        showNotification('Activo guardado');
+        showNotification('Activo guardado correctamente', 'success');
         bootstrap.Modal.getInstance(document.getElementById('modalActivo')).hide();
+        
+        // Limpiar campos
+        document.getElementById('activoId').value = '';
+        document.getElementById('activoCodigo').value = '';
+        document.getElementById('activoNombre').value = '';
+        document.getElementById('activoTipo').value = '';
+        document.getElementById('activoUbicacion').value = '';
+        
         cargarActivos();
         cargarActivosTecnico();
-    };
-
+    } catch (err) {
+        showNotification('Error al guardar: ' + err.message, 'error');
+    }
+};
     // ==================== TÉCNICO ====================
     async function cargarActivosTecnico() {
     const data = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
