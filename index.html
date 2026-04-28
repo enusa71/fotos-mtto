@@ -1428,7 +1428,7 @@ body.tecnico-role #myTabContent {
             tendenciaChart = new Chart(document.getElementById('tendenciaChart'), {
                 type: 'line',
                 data: {
-                    labels: tendencia.map(t => t.mes ? new Date(t.mes).toLocaleDateString('es', { month: 'short', year: 'numeric' }) : ''),
+                    labels: tendencia.map(t => t.mes ? new Date(t.mes).toLocaleDateString('es-CO', { timeZone: 'America/Bogota', month: 'short', year: 'numeric' }) : ''),
                     datasets: [{ label: 'Mantenimientos', data: tendencia.map(t => t.cantidad), borderColor: '#667eea', fill: false }]
                 },
                 options: { responsive: true }
@@ -1490,7 +1490,7 @@ function renderizarPagina() {
         tbody.innerHTML = mantenimientosPagina.map(m => `
             <tr onclick="verDetalleMantenimiento(${m.id})">
                 <td style="text-align: center;">${m.id}</td>
-                <td>${m.fecha_ejecucion ? new Date(m.fecha_ejecucion).toLocaleString() : '-'}</td>
+                <td>${m.fecha_ejecucion ? new Date(m.fecha_ejecucion).toLocaleString('es-CO', { timeZone: 'America/Bogota' }) : '-'}</td>
                 <td>${m.activo_codigo || '-'} - ${m.activo_nombre || '-'}</td>
                 <td>${m.tecnico_nombre || '-'}</td>
                 <td>${m.tipo_nombre || '-'}</td>
@@ -1529,7 +1529,7 @@ function cambiarPagina(delta) {
                             <h6>Información del mantenimiento</h6>
                             <table class="table table-sm">
                                 <tr><th>ID:</th><td>${m.id}</td></tr>
-                                <tr><th>Fecha ejecución:</th><td>${m.fecha_ejecucion ? new Date(m.fecha_ejecucion).toLocaleString() : '-'}</td></tr>
+                                <tr><th>Fecha ejecución:</th><td>${m.fecha_ejecucion ? new Date(m.fecha_ejecucion).toLocaleString('es-CO', { timeZone: 'America/Bogota' }) : '-'}</td></tr>
                                 <tr><th>Fecha programada:</th><td>${m.fecha_programada || '-'}</td></tr>
                                 <tr><th>Activo:</th><td>${m.activo_codigo || ''} - ${m.activo_nombre || ''}</td></tr>
                                 <tr><th>Ubicación:</th><td>${m.activo_ubicacion || '-'}</td></tr>
