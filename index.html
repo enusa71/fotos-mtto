@@ -276,7 +276,11 @@
         height: 100px;
     }
 }
-    
+    /* Ocultar pestañas de administración para técnicos */
+body.tecnico-role #myTab,
+body.tecnico-role #myTabContent {
+    display: none !important;
+}
     
     </style>
 </head>
@@ -737,6 +741,15 @@
         const tabActivos = document.getElementById('activos-tab');
         const tabDashboard = document.getElementById('dashboard-tab');
         const panelTecnico = document.getElementById('tecnicoPanel');
+
+        
+    // ========== AGREGAR ESTAS LÍNEAS ==========
+    if (isTecnico) {
+        document.body.classList.add('tecnico-role');
+    } else {
+        document.body.classList.remove('tecnico-role');
+    }
+    // =========================================
 
         if (isAdmin) {
             tabUsuarios.style.display = 'block';
