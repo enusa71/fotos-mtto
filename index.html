@@ -1666,25 +1666,14 @@ function cambiarPagina(delta) {
         paginaActual = 1;
         renderizarPagina();
     });
-    // 
-     // ========== LIMPIAR MODAL DE USUARIO ==========
+// ========== LIMPIAR MODAL DE USUARIO ==========
 const modalUsuario = document.getElementById('modalUsuario');
 if (modalUsuario) {
-    // Limpiar al cerrar el modal
-    modalUsuario.addEventListener('hidden.bs.modal', function() {
-        document.getElementById('usuarioId').value = '';
-        document.getElementById('usuarioUsername').value = '';
-        document.getElementById('usuarioNombre').value = '';
-        document.getElementById('usuarioPassword').value = '';
-        document.getElementById('usuarioRol').value = 'tecnico';
-        document.getElementById('usuarioActivo').checked = true;
-    });
-    
-    // Limpiar al abrir (para Nuevo Usuario)
     modalUsuario.addEventListener('show.bs.modal', function(e) {
         const button = e.relatedTarget;
-        // Si el botón no tiene data-id (es Nuevo Usuario)
-        if (!button || !button.getAttribute('data-id')) {
+        // Solo limpiar si el botón NO tiene data-id (es "Nuevo Usuario")
+        // Y si el campo usuarioId está vacío (no es edición)
+        if ((!button || !button.getAttribute('data-id')) && !document.getElementById('usuarioId').value) {
             document.getElementById('usuarioId').value = '';
             document.getElementById('usuarioUsername').value = '';
             document.getElementById('usuarioNombre').value = '';
@@ -1698,20 +1687,11 @@ if (modalUsuario) {
 // ========== LIMPIAR MODAL DE ACTIVO ==========
 const modalActivo = document.getElementById('modalActivo');
 if (modalActivo) {
-    // Limpiar al cerrar el modal
-    modalActivo.addEventListener('hidden.bs.modal', function() {
-        document.getElementById('activoId').value = '';
-        document.getElementById('activoCodigo').value = '';
-        document.getElementById('activoNombre').value = '';
-        document.getElementById('activoTipo').value = '';
-        document.getElementById('activoUbicacion').value = '';
-    });
-    
-    // Limpiar al abrir (para Nuevo Activo)
     modalActivo.addEventListener('show.bs.modal', function(e) {
         const button = e.relatedTarget;
-        // Si el botón no tiene data-id (es Nuevo Activo)
-        if (!button || !button.getAttribute('data-id')) {
+        // Solo limpiar si el botón NO tiene data-id (es "Nuevo Activo")
+        // Y si el campo activoId está vacío (no es edición)
+        if ((!button || !button.getAttribute('data-id')) && !document.getElementById('activoId').value) {
             document.getElementById('activoId').value = '';
             document.getElementById('activoCodigo').value = '';
             document.getElementById('activoNombre').value = '';
@@ -1719,8 +1699,7 @@ if (modalActivo) {
             document.getElementById('activoUbicacion').value = '';
         }
     });
-}
-    // Inicialización
+}    // Inicialización
     (function init() {
         const stored = localStorage.getItem('currentUser');
         if (stored) {
