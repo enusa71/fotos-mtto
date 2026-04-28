@@ -1047,11 +1047,18 @@ body.tecnico-role #myTabContent {
         document.querySelectorAll('.eliminar-usuario').forEach(btn => btn.onclick = () => eliminarUsuario(btn.dataset.id));
     }
 async function editarUsuario(id) {
+    console.log('=== EDITAR USUARIO ===');
+    console.log('ID recibido:', id);
+    
     try {
         const users = await apiCall(WEBHOOK_LISTAR_USUARIOS);
+        console.log('Usuarios recibidos:', users);
+        
         const user = users.find(u => u.id == id);
+        console.log('Usuario encontrado:', user);
         
         if (user) {
+            // Asignar valores a los campos
             document.getElementById('usuarioId').value = user.id;
             document.getElementById('usuarioUsername').value = user.usuario;
             document.getElementById('usuarioNombre').value = user.nombre;
@@ -1059,18 +1066,20 @@ async function editarUsuario(id) {
             document.getElementById('usuarioActivo').checked = user.activo;
             document.getElementById('usuarioPassword').value = '';
             
-            // Mostrar el modal
+            console.log('Campos llenados correctamente');
+            
+            // Mostrar modal
             const modal = new bootstrap.Modal(document.getElementById('modalUsuario'));
             modal.show();
         } else {
+            console.log('ERROR: Usuario no encontrado con ID', id);
             showNotification('Usuario no encontrado', 'error');
         }
     } catch (err) {
+        console.error('Error en editarUsuario:', err);
         showNotification('Error al cargar usuario: ' + err.message, 'error');
     }
-}
-
-    async function eliminarUsuario(id) {
+}    async function eliminarUsuario(id) {
     if (!await showConfirmDialog('¿Eliminar este usuario? Esta acción no se puede deshacer.')) return;
     
     showLoading();
@@ -1152,28 +1161,40 @@ async function editarUsuario(id) {
     }
 }
    async function editarActivo(id) {
+    console.log('=== EDITAR ACTIVO ===');
+    console.log('ID recibido:', id);
+    
     try {
         const activos = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
+        console.log('Activos recibidos:', activos);
+        
         const activo = activos.find(a => a.id == id);
+        console.log('Activo encontrado:', activo);
         
         if (activo) {
+            // Asignar valores a los campos
             document.getElementById('activoId').value = activo.id;
             document.getElementById('activoCodigo').value = activo.codigo;
             document.getElementById('activoNombre').value = activo.nombre;
             document.getElementById('activoTipo').value = activo.tipo;
             document.getElementById('activoUbicacion').value = activo.ubicacion || '';
             
-            // Mostrar el modal
+            console.log('Campos llenados correctamente');
+            console.log('Código:', document.getElementById('activoCodigo').value);
+            console.log('Nombre:', document.getElementById('activoNombre').value);
+            
+            // Mostrar modal
             const modal = new bootstrap.Modal(document.getElementById('modalActivo'));
             modal.show();
         } else {
+            console.log('ERROR: Activo no encontrado con ID', id);
             showNotification('Activo no encontrado', 'error');
         }
     } catch (err) {
+        console.error('Error en editarActivo:', err);
         showNotification('Error al cargar activo: ' + err.message, 'error');
     }
 }
-
     async function eliminarActivo(id) {
     if (!await showConfirmDialog('¿Eliminar este activo? Esta acción no se puede deshacer.')) return;
     
