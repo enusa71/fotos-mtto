@@ -1342,7 +1342,6 @@ async function cargarListadoDashboard() {
         hideLoading();
     }
 }
-
 function renderizarPagina() {
     totalPaginas = Math.ceil(todosMantenimientos.length / registrosPorPagina);
     if (totalPaginas === 0) totalPaginas = 1;
@@ -1357,18 +1356,18 @@ function renderizarPagina() {
     if (mantenimientosPagina.length > 0) {
         tbody.innerHTML = mantenimientosPagina.map(m => `
             <tr onclick="verDetalleMantenimiento(${m.id})">
-                <td>${m.id}‹
-                <td>${m.fecha_ejecucion ? new Date(m.fecha_ejecucion).toLocaleString() : '-'}‹
-                <td>${m.activo_codigo || '-'} - ${m.activo_nombre || '-'}‹
-                <td>${m.tecnico_nombre || '-'}‹
-                <td>${m.tipo_nombre || '-'}‹
-                <td>${m.observaciones ? (m.observaciones.substring(0, 50) + (m.observaciones.length > 50 ? '...' : '')) : '-'}‹
-                <td>${m.total_fotos || 0}‹
-                <td><span class="badge bg-success">${m.estado || 'completado'}</span>‹
+                <td style="text-align: center;">${m.id}</td>
+                <td>${m.fecha_ejecucion ? new Date(m.fecha_ejecucion).toLocaleString() : '-'}</td>
+                <td>${m.activo_codigo || '-'} - ${m.activo_nombre || '-'}</td>
+                <td>${m.tecnico_nombre || '-'}</td>
+                <td>${m.tipo_nombre || '-'}</td>
+                <td style="word-break: break-word; white-space: normal;">${m.observaciones ? (m.observaciones.substring(0, 100) + (m.observaciones.length > 100 ? '...' : '')) : '-'}</td>
+                <td style="text-align: center;">${m.total_fotos || 0}</td>
+                <td style="text-align: center;"><span class="badge bg-success">${m.estado || 'completado'}</span></td>
             </tr>
         `).join('');
     } else {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No hay mantenimientos registrados‹';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No hay mantenimientos registrados</td></tr>';
     }
     
     document.getElementById('paginaActual').innerText = paginaActual;
@@ -1377,7 +1376,7 @@ function renderizarPagina() {
     document.getElementById('btnPaginaSiguiente').disabled = (paginaActual >= totalPaginas);
     document.getElementById('totalRegistros').innerText = todosMantenimientos.length;
 }
-
+    
 function cambiarPagina(delta) {
     paginaActual += delta;
     renderizarPagina();
