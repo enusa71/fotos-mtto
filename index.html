@@ -1323,14 +1323,14 @@ body.tecnico-role #myTabContent {
     btn.style.opacity = '0.7';
 
     try {
-        const payload = {
-            admin_id: currentUser.id,
-            activo_id: parseInt(activo_id),
-            tipo_mantenimiento_id: parseInt(tipo_mantenimiento_id),
-            fecha_programada: fecha_programada || new Date().toISOString().slice(0,10),
-            observaciones: observaciones,
-            fotos: fotosTomadas
-        };
+    const payload = {
+    admin_id: currentUser.id,
+    activo_id: parseInt(activo_id),
+    tipo_mantenimiento_id: parseInt(tipo_mantenimiento_id),
+    fecha_programada: new Date().toISOString().split('T')[0],  // ← Fecha actual automática
+    observaciones: observaciones,
+    fotos: fotosTomadas
+};
         const resp = await fetch(WEBHOOK_CREAR_MANTENIMIENTO, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
