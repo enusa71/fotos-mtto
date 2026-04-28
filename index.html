@@ -1317,7 +1317,7 @@ if (!observacionesTextarea) { showNotification('Error: Campo observaciones no en
 
 const activo_id = activoSelect.value;
 const tipo_mantenimiento_id = tipoSelect.value;
-const fecha_programada = fechaInput ? fechaInput.value : new Date().toISOString().split('T')[0];
+const fecha_programada = new Date().toISOString().split('T')[0];
 const observaciones = observacionesTextarea.value;
     if (!activo_id) { showNotification('Debe seleccionar un activo', 'warning'); return; }
     if (!tipo_mantenimiento_id) { showNotification('Debe seleccionar un tipo de mantenimiento', 'warning'); return; }
