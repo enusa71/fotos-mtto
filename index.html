@@ -1046,10 +1046,11 @@ body.tecnico-role #myTabContent {
         document.querySelectorAll('.editar-usuario').forEach(btn => btn.onclick = () => editarUsuario(btn.dataset.id));
         document.querySelectorAll('.eliminar-usuario').forEach(btn => btn.onclick = () => eliminarUsuario(btn.dataset.id));
     }
-
-    async function editarUsuario(id) {
+async function editarUsuario(id) {
+    try {
         const users = await apiCall(WEBHOOK_LISTAR_USUARIOS);
         const user = users.find(u => u.id == id);
+        
         if (user) {
             document.getElementById('usuarioId').value = user.id;
             document.getElementById('usuarioUsername').value = user.usuario;
@@ -1057,9 +1058,17 @@ body.tecnico-role #myTabContent {
             document.getElementById('usuarioRol').value = user.rol;
             document.getElementById('usuarioActivo').checked = user.activo;
             document.getElementById('usuarioPassword').value = '';
-            new bootstrap.Modal(document.getElementById('modalUsuario')).show();
+            
+            // Mostrar el modal
+            const modal = new bootstrap.Modal(document.getElementById('modalUsuario'));
+            modal.show();
+        } else {
+            showNotification('Usuario no encontrado', 'error');
         }
+    } catch (err) {
+        showNotification('Error al cargar usuario: ' + err.message, 'error');
     }
+}
 
     async function eliminarUsuario(id) {
     if (!await showConfirmDialog('¿Eliminar este usuario? Esta acción no se puede deshacer.')) return;
@@ -1142,18 +1151,28 @@ body.tecnico-role #myTabContent {
         });
     }
 }
-    async function editarActivo(id) {
+   async function editarActivo(id) {
+    try {
         const activos = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
         const activo = activos.find(a => a.id == id);
+        
         if (activo) {
             document.getElementById('activoId').value = activo.id;
             document.getElementById('activoCodigo').value = activo.codigo;
             document.getElementById('activoNombre').value = activo.nombre;
             document.getElementById('activoTipo').value = activo.tipo;
             document.getElementById('activoUbicacion').value = activo.ubicacion || '';
-            new bootstrap.Modal(document.getElementById('modalActivo')).show();
+            
+            // Mostrar el modal
+            const modal = new bootstrap.Modal(document.getElementById('modalActivo'));
+            modal.show();
+        } else {
+            showNotification('Activo no encontrado', 'error');
         }
+    } catch (err) {
+        showNotification('Error al cargar activo: ' + err.message, 'error');
     }
+}
 
     async function eliminarActivo(id) {
     if (!await showConfirmDialog('¿Eliminar este activo? Esta acción no se puede deshacer.')) return;
