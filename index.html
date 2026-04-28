@@ -1615,9 +1615,24 @@ if (modalUsuarioElement) {
             document.getElementById('usuarioActivo').checked = true;
         }
     });
+    
 }
     // =====================================================
-
+// ========== LIMPIAR MODAL DE ACTIVOS ==========
+const modalActivoElement = document.getElementById('modalActivo');
+if (modalActivoElement) {
+    modalActivoElement.addEventListener('show.bs.modal', function(e) {
+        const button = e.relatedTarget;
+        // Si se abre con el botón "Nuevo Activo" (no tiene data-id)
+        if (!button || !button.getAttribute('data-id')) {
+            document.getElementById('activoId').value = '';
+            document.getElementById('activoCodigo').value = '';
+            document.getElementById('activoNombre').value = '';
+            document.getElementById('activoTipo').value = '';
+            document.getElementById('activoUbicacion').value = '';
+        }
+    });
+}
     // Inicialización
     (function init() {
         const stored = localStorage.getItem('currentUser');
