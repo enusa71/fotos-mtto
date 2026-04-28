@@ -85,6 +85,199 @@
         .foto-gallery img:hover { transform: scale(1.05); }
         .filter-card { background: white; border-radius: 16px; padding: 1rem; margin-bottom: 1.5rem; }
         .table-hover tbody tr:hover { background-color: #f8f9fa; cursor: pointer; }
+        /* ========== ESTILOS PARA MÓVIL Y TABLET ========== */
+/* Panel técnico - optimizado para táctil */
+#tecnicoPanel {
+    padding: 0 10px;
+}
+
+#tecnicoPanel .card {
+    border-radius: 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+#tecnicoPanel h4 {
+    font-size: 1.5rem;
+    margin-bottom: 1.2rem;
+}
+
+#tecnicoPanel label {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+#tecnicoPanel select,
+#tecnicoPanel input,
+#tecnicoPanel textarea {
+    font-size: 16px !important; /* Evita zoom automático en iOS */
+    padding: 12px 15px;
+    border-radius: 12px;
+    border: 1px solid #ced4da;
+    background-color: white;
+    width: 100%;
+}
+
+/* Estilos táctiles para botones */
+#tecnicoPanel .btn {
+    padding: 14px 20px;
+    font-size: 1.1rem;
+    border-radius: 50px;
+    font-weight: 600;
+}
+
+#btnTakePhoto {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+}
+
+#btnGuardarMantenimiento {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+    font-size: 1.2rem;
+    padding: 16px;
+    box-shadow: 0 4px 12px rgba(40,167,69,0.3);
+}
+
+/* Contenedor de cámara */
+.camera-container {
+    border-radius: 24px;
+    overflow: hidden;
+    background: #000;
+    margin: 15px 0;
+}
+
+.camera-container video {
+    width: 100%;
+    height: auto;
+    min-height: 250px;
+    max-height: 400px;
+    object-fit: cover;
+}
+
+/* Botones de cámara en fila adaptable */
+.btn-group-custom {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin: 15px 0;
+}
+
+.btn-group-custom .btn {
+    flex: 1;
+    min-width: 100px;
+    padding: 12px;
+}
+
+/* Vista previa de fotos - galería táctil */
+#fotosPreview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 15px 0;
+    justify-content: center;
+}
+
+.foto-thumb {
+    position: relative;
+    width: 90px;
+    margin: 0;
+}
+
+.foto-thumb img {
+    width: 90px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.foto-thumb button {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 28px;
+    height: 28px;
+    border-radius: 20px;
+    padding: 0;
+    font-size: 14px;
+    background-color: #dc3545;
+    border: none;
+    color: white;
+    font-weight: bold;
+}
+
+/* Contador de fotos */
+#fotosPreview::before {
+    content: attr(data-count);
+    display: none;
+}
+
+/* Mejoras táctiles para selects */
+.select2-container .select2-selection--single {
+    height: 48px !important;
+    border-radius: 12px !important;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 48px !important;
+    padding-left: 15px !important;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 46px !important;
+}
+
+/* Ajustes para móvil muy pequeño */
+@media (max-width: 480px) {
+    #tecnicoPanel .btn-group-custom {
+        flex-direction: column;
+    }
+    
+    .btn-group-custom .btn {
+        width: 100%;
+    }
+    
+    .foto-thumb {
+        width: 70px;
+    }
+    
+    .foto-thumb img {
+        width: 70px;
+        height: 70px;
+    }
+    
+    #tecnicoPanel h4 {
+        font-size: 1.3rem;
+    }
+    
+    #btnGuardarMantenimiento {
+        font-size: 1rem;
+        padding: 14px;
+    }
+}
+
+/* Ajustes para tablet */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .btn-group-custom .btn {
+        padding: 14px 18px;
+        font-size: 1rem;
+    }
+    
+    .foto-thumb {
+        width: 100px;
+    }
+    
+    .foto-thumb img {
+        width: 100px;
+        height: 100px;
+    }
+}
+    
+    
     </style>
 </head>
 <body>
