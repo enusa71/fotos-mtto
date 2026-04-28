@@ -783,6 +783,7 @@ body.tecnico-role #myTabContent {
             currentStream = null;
         }
         localStorage.removeItem('currentUser');
+        document.body.classList.remove('tecnico-role'); // Agrega esta línea
         location.reload();
     });
     async function cargarTiposMantenimiento() {
