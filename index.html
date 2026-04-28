@@ -408,6 +408,75 @@ body.tecnico-role #myTabContent {
         -webkit-overflow-scrolling: touch;
     }
 }    
+
+  /* ========== ESTILOS PARA LA TABLA DE MANTENIMIENTOS ========== */
+#mantenimientosTable {
+    width: 100%;
+}
+
+#mantenimientosTable th,
+#mantenimientosTable td {
+    padding: 10px 8px;
+    vertical-align: middle;
+}
+
+/* Anchos automáticos pero con mínimo */
+#mantenimientosTable th:nth-child(1), /* ID */
+#mantenimientosTable td:nth-child(1) {
+    width: 5%;
+    text-align: center;
+}
+
+#mantenimientosTable th:nth-child(2), /* Fecha */
+#mantenimientosTable td:nth-child(2) {
+    width: 15%;
+}
+
+#mantenimientosTable th:nth-child(3), /* Activo */
+#mantenimientosTable td:nth-child(3) {
+    width: 15%;
+}
+
+#mantenimientosTable th:nth-child(4), /* Técnico */
+#mantenimientosTable td:nth-child(4) {
+    width: 12%;
+}
+
+#mantenimientosTable th:nth-child(5), /* Tipo */
+#mantenimientosTable td:nth-child(5) {
+    width: 10%;
+}
+
+#mantenimientosTable th:nth-child(6), /* Observaciones */
+#mantenimientosTable td:nth-child(6) {
+    width: 25%;
+    word-break: break-word;
+    white-space: normal;
+}
+
+#mantenimientosTable th:nth-child(7), /* Fotos */
+#mantenimientosTable td:nth-child(7) {
+    width: 8%;
+    text-align: center;
+}
+
+#mantenimientosTable th:nth-child(8), /* Estado */
+#mantenimientosTable td:nth-child(8) {
+    width: 10%;
+    text-align: center;
+}
+
+/* Para pantallas pequeñas, permitir scroll horizontal */
+@media (max-width: 768px) {
+    .table-responsive {
+        overflow-x: auto;
+    }
+    #mantenimientosTable {
+        min-width: 800px;
+    }
+}      
+        
+        
     </style>
 </head>
 <body>
