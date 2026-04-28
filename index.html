@@ -1630,7 +1630,10 @@ function cambiarPagina(delta) {
         // Verificar que jQuery y Select2 estén disponibles
         if (typeof $ !== 'undefined' && $.fn && $.fn.select2) {
             // Inicializar para activos (cuando exista)
-            const activoSelect = document.getElementById('activoSelect');
+            let activoSelect;
+            document.addEventListener('DOMContentLoaded', function() {
+            activoSelect = document.getElementById('activoSelect');
+            });
             const tipoSelect = document.getElementById('tipoMantenimientoSelect');
             
             if (activoSelect && activoSelect.options.length > 1) {
