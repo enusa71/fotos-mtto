@@ -579,7 +579,31 @@
         localStorage.removeItem('currentUser');
         location.reload();
     });
-
+    async function cargarTiposMantenimiento() {
+    const select = document.getElementById('tipoMantenimientoSelect');
+    try {
+        let data = await apiCall(WEBHOOK_LISTAR_TIPOS_MANTENIMIENTO);
+        if (!Array.isArray(data)) data = [data];
+        if (!data || data.length === 0) {
+            select.innerHTML = '<option value="">No hay tipos disponibles</option>';
+            return;
+        }
+        select.innerHTML = '<option value="">Seleccione tipo...</option>' +
+            data.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+        
+        // Inicializar Select2 después de cargar los datos
+        if (typeof $ !== 'undefined' && $.fn && $.fn.select2) {
+            $(select).select2({
+                placeholder: "Escriba para buscar un tipo...",
+                allowClear: true,
+                width: '100%'
+            });
+        }
+    } catch (err) {
+        console.error("Error cargando tipos:", err);
+        select.innerHTML = '<option value="">Error al cargar tipos</option>';
+    }
+}
     // ==================== CRUD USUARIOS ====================
     async function cargarUsuarios() {
         const data = await apiCall(WEBHOOK_LISTAR_USUARIOS);
@@ -641,29 +665,29 @@
 
     // ==================== CRUD ACTIVOS ====================
     async function cargarActivos() {
-        const data = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
-        const tbody = document.getElementById('activosTableBody');
-        if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay activos registrados</td></tr>'; return; }
-        tbody.innerHTML = data.map(a => `
-            <tr>
-                <td>${a.id}</td>
-                <td>${a.codigo}</td>
-                <td>${a.nombre}</td>
-                <td>${a.tipo}</td>
-                <td>${a.ubicacion || ''}</td>
-                <td><button class="btn btn-sm btn-warning editar-activo" data-id="${a.id}">Editar</button>
-                <button class="btn btn-sm btn-danger eliminar-activo" data-id="${a.id}">Eliminar</button></td>
-            </tr>
-        `).join('');
-        document.querySelectorAll('.editar-activo').forEach(btn => btn.onclick = () => editarActivo(btn.dataset.id));
-        document.querySelectorAll('.eliminar-activo').forEach(btn => btn.onclick = () => eliminarActivo(btn.dataset.id));
-        
-        // También actualizar filtros del dashboard si ya está cargado
-        if (document.getElementById('filtroActivo')) {
-            cargarFiltrosDashboard();
-        }
+    const data = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
+    const tbody = document.getElementById('activosTableBody');
+    if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay activos registrados</tr>'; return; }
+    tbody.innerHTML = data.map(a => `<tr><td>${a.id}</td><td>${a.codigo}</td><td>${a.nombre}</td><td>${a.tipo}</td><td>${a.ubicacion || ''}</td><td><button class="btn btn-sm btn-warning editar-activo" data-id="${a.id}">Editar</button> <button class="btn btn-sm btn-danger eliminar-activo" data-id="${a.id}">Eliminar</button></td></tr>`).join('');
+    
+    document.querySelectorAll('.editar-activo').forEach(btn => btn.onclick = () => editarActivo(btn.dataset.id));
+    document.querySelectorAll('.eliminar-activo').forEach(btn => btn.onclick = () => eliminarActivo(btn.dataset.id));
+    
+    // También actualizar filtros del dashboard si está cargado
+    if (document.getElementById('filtroActivo')) {
+        cargarFiltrosDashboard();
     }
-
+    
+    // Inicializar Select2 en el filtro de activos del dashboard si existe
+    const filtroActivo = document.getElementById('filtroActivo');
+    if (filtroActivo && typeof $ !== 'undefined' && $.fn && $.fn.select2 && filtroActivo.options.length > 1) {
+        $(filtroActivo).select2({
+            placeholder: "Buscar activo...",
+            allowClear: true,
+            width: '100%'
+        });
+    }
+}
     async function editarActivo(id) {
         const activos = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
         const activo = activos.find(a => a.id == id);
@@ -705,30 +729,26 @@
 
     // ==================== TÉCNICO ====================
     async function cargarActivosTecnico() {
-        const data = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
-        const select = document.getElementById('activoSelect');
-        if (!data.length) { select.innerHTML = '<option value="">No hay activos disponibles</option>'; return; }
-        select.innerHTML = '<option value="">Seleccione un activo...</option>' +
-            data.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
+    const data = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
+    const select = document.getElementById('activoSelect');
+    
+    if (!data.length) {
+        select.innerHTML = '<option value="">No hay activos disponibles</option>';
+        return;
     }
-
-    async function cargarTiposMantenimiento() {
-        const select = document.getElementById('tipoMantenimientoSelect');
-        try {
-            let data = await apiCall(WEBHOOK_LISTAR_TIPOS_MANTENIMIENTO);
-            if (!Array.isArray(data)) data = [data];
-            if (!data || data.length === 0) {
-                select.innerHTML = '<option value="">No hay tipos disponibles</option>';
-                return;
-            }
-            select.innerHTML = '<option value="">Seleccione tipo...</option>' +
-                data.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
-        } catch (err) {
-            console.error("Error cargando tipos:", err);
-            select.innerHTML = '<option value="">Error al cargar tipos</option>';
-        }
+    
+    select.innerHTML = '<option value="">Seleccione un activo...</option>' +
+        data.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
+    
+    // Inicializar Select2 después de cargar los datos
+    if (typeof $ !== 'undefined' && $.fn && $.fn.select2) {
+        $(select).select2({
+            placeholder: "Escriba para buscar un activo...",
+            allowClear: true,
+            width: '100%'
+        });
     }
-
+}
     async function iniciarCamara() {
         if (currentStream) {
             currentStream.getTracks().forEach(track => track.stop());
@@ -1049,6 +1069,38 @@ async function cargarListadoDashboard() {
             } catch(e) {}
         }
     })();
+</script>
+    <!-- Librerías para Select2 -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+    // Inicializar Select2 cuando los selects estén cargados
+    document.addEventListener('DOMContentLoaded', function() {
+        // Verificar que jQuery y Select2 estén disponibles
+        if (typeof $ !== 'undefined' && $.fn && $.fn.select2) {
+            // Inicializar para activos (cuando exista)
+            const activoSelect = document.getElementById('activoSelect');
+            const tipoSelect = document.getElementById('tipoMantenimientoSelect');
+            
+            if (activoSelect && activoSelect.options.length > 1) {
+                $(activoSelect).select2({
+                    placeholder: "Escriba para buscar un activo...",
+                    allowClear: true,
+                    width: '100%'
+                });
+            }
+            
+            if (tipoSelect && tipoSelect.options.length > 1) {
+                $(tipoSelect).select2({
+                    placeholder: "Escriba para buscar un tipo...",
+                    allowClear: true,
+                    width: '100%'
+                });
+            }
+        }
+    });
 </script>
 </body>
 </html>
