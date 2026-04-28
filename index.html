@@ -1226,12 +1226,15 @@ body.tecnico-role #myTabContent {
         console.error('Error cargando estadísticas:', err);
     }
 }
+    let todosMantenimientos = [];
+let paginaActual = 1;
+let registrosPorPagina = 20;
+let totalPaginas = 1;
+
 async function cargarListadoDashboard() {
     showLoading();
     try {
-        // Construir parámetros para la URL (GET)
         const params = new URLSearchParams();
-        
         const activoId = document.getElementById('filtroActivo')?.value;
         const tecnicoId = document.getElementById('filtroTecnico')?.value;
         const tipoId = document.getElementById('filtroTipo')?.value;
@@ -1244,36 +1247,63 @@ async function cargarListadoDashboard() {
         if (fechaDesde && fechaDesde !== '') params.append('fecha_desde', fechaDesde);
         if (fechaHasta && fechaHasta !== '') params.append('fecha_hasta', fechaHasta);
         
-        // URL con parámetros GET (sin body)
         const url = `${API_LISTAR_MANTENIMIENTOS}${params.toString() ? '?' + params.toString() : ''}`;
-        
         const response = await fetch(url, { method: 'GET' });
         const data = await response.json();
         
-        const tbody = document.getElementById('mantenimientosTableBody');
-        if (data.mantenimientos && data.mantenimientos.length) {
-            tbody.innerHTML = data.mantenimientos.map(m => `
-                <tr onclick="verDetalleMantenimiento(${m.id})">
-                    <td>${m.id}</td>
-                    <td>${m.fecha_ejecucion ? new Date(m.fecha_ejecucion).toLocaleString() : '-'}</td>
-                    <td>${m.activo_codigo || '-'} - ${m.activo_nombre || '-'}</td>
-                    <td>${m.tecnico_nombre || '-'}</td>
-                    <td>${m.tipo_nombre || '-'}</td>
-                    <td>${m.observaciones ? (m.observaciones.substring(0, 50) + (m.observaciones.length > 50 ? '...' : '')) : '-'}</td>
-                    <td>${m.total_fotos || 0}</td>
-                    <td><span class="badge bg-success">${m.estado || 'completado'}</span></td>
-                </tr>
-            `).join('');
-        } else {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center">No hay mantenimientos registrados</td></tr>';
-        }
+        todosMantenimientos = data.mantenimientos || [];
+        paginaActual = 1;
+        registrosPorPagina = parseInt(document.getElementById('paginaLimit').value);
+        
+        renderizarPagina();
     } catch (err) {
-        console.error('Error cargando listado dashboard:', err);
-        document.getElementById('mantenimientosTableBody').innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error al cargar datos</td></tr>';
+        console.error('Error:', err);
+        document.getElementById('mantenimientosTableBody').innerHTML = '</td><td colspan="8" class="text-center text-danger">Error al cargar datos‹';
     } finally {
         hideLoading();
     }
-}  
+}
+
+function renderizarPagina() {
+    totalPaginas = Math.ceil(todosMantenimientos.length / registrosPorPagina);
+    if (totalPaginas === 0) totalPaginas = 1;
+    if (paginaActual < 1) paginaActual = 1;
+    if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+    
+    const inicio = (paginaActual - 1) * registrosPorPagina;
+    const fin = inicio + registrosPorPagina;
+    const mantenimientosPagina = todosMantenimientos.slice(inicio, fin);
+    
+    const tbody = document.getElementById('mantenimientosTableBody');
+    if (mantenimientosPagina.length > 0) {
+        tbody.innerHTML = mantenimientosPagina.map(m => `
+            <tr onclick="verDetalleMantenimiento(${m.id})">
+                <td>${m.id}‹
+                <td>${m.fecha_ejecucion ? new Date(m.fecha_ejecucion).toLocaleString() : '-'}‹
+                <td>${m.activo_codigo || '-'} - ${m.activo_nombre || '-'}‹
+                <td>${m.tecnico_nombre || '-'}‹
+                <td>${m.tipo_nombre || '-'}‹
+                <td>${m.observaciones ? (m.observaciones.substring(0, 50) + (m.observaciones.length > 50 ? '...' : '')) : '-'}‹
+                <td>${m.total_fotos || 0}‹
+                <td><span class="badge bg-success">${m.estado || 'completado'}</span>‹
+            </tr>
+        `).join('');
+    } else {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center">No hay mantenimientos registrados‹';
+    }
+    
+    document.getElementById('paginaActual').innerText = paginaActual;
+    document.getElementById('totalPaginas').innerText = totalPaginas;
+    document.getElementById('btnPaginaAnterior').disabled = (paginaActual <= 1);
+    document.getElementById('btnPaginaSiguiente').disabled = (paginaActual >= totalPaginas);
+    document.getElementById('totalRegistros').innerText = todosMantenimientos.length;
+}
+
+function cambiarPagina(delta) {
+    paginaActual += delta;
+    renderizarPagina();
+}
+    
     async function verDetalleMantenimiento(id) {
         showLoading();
         try {
