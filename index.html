@@ -1154,12 +1154,45 @@ body.tecnico-role #myTabContent {
     }
 
     async function eliminarActivo(id) {
-        if (!await showConfirmDialog('¿Eliminar este activo?')) return;
-        await apiCall(WEBHOOK_ELIMINAR_ACTIVO, { method: 'DELETE', body: JSON.stringify({ id, admin_id: currentUser.id }) });
-        showNotification('Activo eliminado');
+    if (!await showConfirmDialog('¿Eliminar este activo? Esta acción no se puede deshacer.')) return;
+    
+    showLoading();
+    try {
+        const response = await fetch(WEBHOOK_ELIMINAR_ACTIVO, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, admin_id: currentUser.id })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success === false) {
+            let mensaje = data.message || data.error || 'No se puede eliminar el activo';
+            
+            if (data.steps && data.steps.length) {
+                mensaje = `${data.message || '⚠️ No se puede eliminar el activo'}\n\n📋 Opciones:\n${data.steps.map((s, i) => `${i+1}. ${s}`).join('\n')}`;
+            } else if (data.details) {
+                mensaje = `${mensaje}\n\n${data.details}`;
+            }
+            
+            showNotification(mensaje, 'warning');
+            return;
+        }
+        
+        showNotification(data.message || '✅ Activo eliminado correctamente', 'success');
         cargarActivos();
         cargarActivosTecnico();
+    } catch (err) {
+        let errorMsg = err.message;
+        if (errorMsg.includes('foreign key constraint') || errorMsg.includes('mantenimientos_activo_id_fkey')) {
+            showNotification('⚠️ No se puede eliminar el activo porque tiene mantenimientos asociados.\n\n📋 Opciones:\n1. Reasignar los mantenimientos a otro activo\n2. Eliminar los mantenimientos asociados\n3. Desactivar el activo en lugar de eliminarlo (cambiar activo a false)', 'warning');
+        } else {
+            showNotification('Error al eliminar: ' + errorMsg, 'error');
+        }
+    } finally {
+        hideLoading();
     }
+}
 
     document.getElementById('guardarActivoBtn').onclick = async () => {
         const id = document.getElementById('activoId').value;
