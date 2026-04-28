@@ -327,8 +327,87 @@ body.tecnico-role #myTabContent {
 /* Eliminar espacios vacíos de los gráficos eliminados */
 .charts-row {
     display: none;
-}     
     
+}     
+/* ========== ESTILOS PARA LA TABLA DE MANTENIMIENTOS ========== */
+#mantenimientosTable {
+    width: 100%;
+    white-space: nowrap;
+}
+
+#mantenimientosTable th,
+#mantenimientosTable td {
+    padding: 12px 8px;
+    vertical-align: middle;
+}
+
+/* Anchos específicos para cada columna */
+#mantenimientosTable th:nth-child(1),
+#mantenimientosTable td:nth-child(1) {
+    min-width: 60px;
+    width: 60px;
+}
+
+#mantenimientosTable th:nth-child(2),
+#mantenimientosTable td:nth-child(2) {
+    min-width: 160px;
+    width: 160px;
+}
+
+#mantenimientosTable th:nth-child(3),
+#mantenimientosTable td:nth-child(3) {
+    min-width: 180px;
+    width: 180px;
+}
+
+#mantenimientosTable th:nth-child(4),
+#mantenimientosTable td:nth-child(4) {
+    min-width: 120px;
+    width: 120px;
+}
+
+#mantenimientosTable th:nth-child(5),
+#mantenimientosTable td:nth-child(5) {
+    min-width: 100px;
+    width: 100px;
+}
+
+#mantenimientosTable th:nth-child(6),
+#mantenimientosTable td:nth-child(6) {
+    min-width: 200px;
+    width: auto;
+    white-space: normal;
+    word-break: break-word;
+}
+
+#mantenimientosTable th:nth-child(7),
+#mantenimientosTable td:nth-child(7) {
+    min-width: 60px;
+    width: 60px;
+    text-align: center;
+}
+
+#mantenimientosTable th:nth-child(8),
+#mantenimientosTable td:nth-child(8) {
+    min-width: 90px;
+    width: 90px;
+    text-align: center;
+}
+
+/* Estilo para las celdas de observaciones */
+#mantenimientosTable td:nth-child(6) {
+    white-space: normal;
+    word-break: break-word;
+    max-width: 250px;
+}
+
+/* Para dispositivos móviles, permitir scroll horizontal */
+@media (max-width: 768px) {
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}    
     </style>
 </head>
 <body>
