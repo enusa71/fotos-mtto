@@ -6,8 +6,6 @@
     <title>Mantenimiento Zona Franca</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Select2 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background-color: #f0f2f5; padding: 20px; }
@@ -87,19 +85,6 @@
         .foto-gallery img:hover { transform: scale(1.05); }
         .filter-card { background: white; border-radius: 16px; padding: 1rem; margin-bottom: 1.5rem; }
         .table-hover tbody tr:hover { background-color: #f8f9fa; cursor: pointer; }
-        
-        /* Estilos para Select2 */
-        .select2-container .select2-selection--single {
-            height: 38px;
-            border-radius: 6px;
-            border-color: #ced4da;
-        }
-        .select2-container--default .select2-selection--single .select2-selection__rendered {
-            line-height: 38px;
-        }
-        .select2-container--default .select2-selection--single .select2-selection__arrow {
-            height: 36px;
-        }
     </style>
 </head>
 <body>
@@ -147,13 +132,13 @@
                 <form id="mantenimientoForm">
                     <div class="mb-3">
                         <label>Activo (bodega / equipo)</label>
-                        <select id="activoSelect" class="form-select" style="width: 100%;" required>
+                        <select id="activoSelect" class="form-select" required>
                             <option value="">Cargando activos...</option>
                         </select>
                     </div>
                     <div class="mb-3">
                         <label>Tipo de mantenimiento</label>
-                        <select id="tipoMantenimientoSelect" class="form-select" style="width: 100%;" required>
+                        <select id="tipoMantenimientoSelect" class="form-select" required>
                             <option value="">Cargando tipos...</option>
                         </select>
                     </div>
@@ -195,7 +180,7 @@
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover">
-                        <thead><tr><th>ID</th><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Activo</th><th>Acciones</th></tr></thead>
+                        <thead><tr><th>ID</th><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Activo</th><th>Acciones</th></thead>
                         <tbody id="usuariosTableBody"></tbody>
                     </table>
                 </div>
@@ -208,7 +193,7 @@
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover">
-                        <thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Tipo</th><th>Ubicación</th><th>Acciones</th></tr></thead>
+                        <thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Tipo</th><th>Ubicación</th><th>Acciones</th></thead>
                         <tbody id="activosTableBody"></tbody>
                     </table>
                 </div>
@@ -276,7 +261,7 @@
                             </div>
                             <div class="card-body">
                                 <table class="table table-sm" id="topTecnicosTable">
-                                    <thead><tr><th>Técnico</th><th>Mantenimientos</th></tr></thead>
+                                    <thead><tr><th>Técnico</th><th>Mantenimientos</th></thead>
                                     <tbody><tr><td colspan="2">Cargando...</td></tr></tbody>
                                 </table>
                             </div>
@@ -289,9 +274,9 @@
                             </div>
                             <div class="card-body">
                                 <table class="table table-sm" id="topActivosTable">
-                                    <thead><tr><th>Activo</th><th>Mantenimientos</th><table></thead>
+                                    <thead><tr><th>Activo</th><th>Mantenimientos</th></thead>
                                     <tbody><tr><td colspan="2">Cargando...</td></tr></tbody>
-                                <｜point｜>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -446,10 +431,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-<!-- jQuery y Select2 -->
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
 <script>
     // ==================== CONFIGURACIÓN ====================
     const N8N_BASE_URL = 'https://api.enusa.org';  // <--- CAMBIA POR TU URL DE N8N
@@ -677,6 +658,7 @@
         document.querySelectorAll('.editar-activo').forEach(btn => btn.onclick = () => editarActivo(btn.dataset.id));
         document.querySelectorAll('.eliminar-activo').forEach(btn => btn.onclick = () => eliminarActivo(btn.dataset.id));
         
+        // También actualizar filtros del dashboard si ya está cargado
         if (document.getElementById('filtroActivo')) {
             cargarFiltrosDashboard();
         }
@@ -721,27 +703,13 @@
         cargarActivosTecnico();
     };
 
-    // ==================== TÉCNICO CON SELECT2 ====================
+    // ==================== TÉCNICO ====================
     async function cargarActivosTecnico() {
         const data = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
         const select = document.getElementById('activoSelect');
-        
-        if (!data.length) {
-            select.innerHTML = '<option value="">No hay activos disponibles</option>';
-            return;
-        }
-        
-        select.innerHTML = '<option value="">Buscar activo...</option>' +
+        if (!data.length) { select.innerHTML = '<option value="">No hay activos disponibles</option>'; return; }
+        select.innerHTML = '<option value="">Seleccione un activo...</option>' +
             data.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
-        
-        // Inicializar Select2
-        if (typeof $ !== 'undefined' && $.fn.select2) {
-            $(select).select2({
-                placeholder: "Escriba para buscar un activo...",
-                allowClear: true,
-                width: '100%'
-            });
-        }
     }
 
     async function cargarTiposMantenimiento() {
@@ -755,15 +723,6 @@
             }
             select.innerHTML = '<option value="">Seleccione tipo...</option>' +
                 data.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
-            
-            // Inicializar Select2 para el tipo de mantenimiento
-            if (typeof $ !== 'undefined' && $.fn.select2) {
-                $(select).select2({
-                    placeholder: "Buscar tipo de mantenimiento...",
-                    allowClear: true,
-                    width: '100%'
-                });
-            }
         } catch (err) {
             console.error("Error cargando tipos:", err);
             select.innerHTML = '<option value="">Error al cargar tipos</option>';
@@ -869,14 +828,8 @@
             fotosTomadas = [];
             actualizarPreviewFotos();
             document.getElementById('mantenimientoForm').reset();
-            // Limpiar Select2 correctamente
-            if (typeof $ !== 'undefined' && $.fn.select2) {
-                $('#activoSelect').val('').trigger('change');
-                $('#tipoMantenimientoSelect').val('').trigger('change');
-            } else {
-                document.getElementById('activoSelect').value = '';
-                document.getElementById('tipoMantenimientoSelect').value = '';
-            }
+            document.getElementById('activoSelect').value = '';
+            document.getElementById('tipoMantenimientoSelect').value = '';
             document.getElementById('observaciones').value = '';
             await iniciarCamara();
             // Recargar dashboard si está visible
@@ -914,98 +867,105 @@
     }
 
     async function cargarEstadisticasDashboard() {
-        try {
-            const data = await apiCall(API_ESTADISTICAS);
-            if (data.success) {
-                document.getElementById('totalMantenimientos').innerText = data.resumen?.total_mantenimientos || 0;
-                document.getElementById('totalFotos').innerText = data.resumen?.total_fotos || 0;
-                document.getElementById('totalTecnicos').innerText = data.resumen?.total_tecnicos || 0;
-                document.getElementById('totalActivos').innerText = data.resumen?.total_activos_atendidos || 0;
+    try {
+        const data = await apiCall(API_ESTADISTICAS);
+        if (data.success) {
+            // Leer el resumen (totales)
+            document.getElementById('totalMantenimientos').innerText = data.resumen?.total_mantenimientos || 0;
+            document.getElementById('totalFotos').innerText = data.resumen?.total_fotos || 0;
+            document.getElementById('totalTecnicos').innerText = data.resumen?.total_tecnicos || 0;
+            document.getElementById('totalActivos').innerText = data.resumen?.total_activos_atendidos || 0;
 
-                const tipos = data.porTipo || [];
-                if (tipoChart) tipoChart.destroy();
-                tipoChart = new Chart(document.getElementById('tipoChart'), {
-                    type: 'pie',
-                    data: {
-                        labels: tipos.map(t => t.tipo),
-                        datasets: [{ data: tipos.map(t => t.cantidad), backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b'] }]
-                    },
-                    options: { responsive: true }
-                });
+            // Gráfico de tipos (porTipo)
+            const tipos = data.porTipo || [];
+            if (tipoChart) tipoChart.destroy();
+            tipoChart = new Chart(document.getElementById('tipoChart'), {
+                type: 'pie',
+                data: {
+                    labels: tipos.map(t => t.tipo),
+                    datasets: [{ data: tipos.map(t => t.cantidad), backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b'] }]
+                },
+                options: { responsive: true }
+            });
 
-                const topTecnicos = data.topTecnicos || [];
-                document.getElementById('topTecnicosTable').innerHTML = `
-                    <thead><tr><th>Técnico</th><th>Mantenimientos</th><tr></thead>
-                    <tbody>${topTecnicos.map(t => `<tr><td>${t.tecnico}</td><td>${t.mantenimientos}</td></tr>`).join('') || '<tr><td colspan="2">Sin datos</td>'}</tbody>
-                `;
+            // Tabla top técnicos
+            const topTecnicos = data.topTecnicos || [];
+            document.getElementById('topTecnicosTable').innerHTML = `
+                <thead><tr><th>Técnico</th><th>Mantenimientos</th></tr></thead>
+                <tbody>${topTecnicos.map(t => `<tr><td>${t.tecnico}</td><td>${t.mantenimientos}</td></tr>`).join('') || '<tr><td colspan="2">Sin datos</td>'}</tbody>
+            `;
 
-                const topActivos = data.topActivos || [];
-                document.getElementById('topActivosTable').innerHTML = `
-                    <thead><tr><th>Activo</th><th>Mantenimientos</th>｜DSML｜</thead>
-                    <tbody>${topActivos.map(a => `<tr><td>${a.codigo} - ${a.activo}</td><td>${a.mantenimientos}</td></tr>`).join('') || '<tr><td colspan="2">Sin datos</td>'}</tbody>
-                `;
+            // Tabla top activos
+            const topActivos = data.topActivos || [];
+            document.getElementById('topActivosTable').innerHTML = `
+                <thead><tr><th>Activo</th><th>Mantenimientos</th></table></thead>
+                <tbody>${topActivos.map(a => `<tr><td>${a.codigo} - ${a.activo}</td><td>${a.mantenimientos}</td>`).join('') || '<tr><td colspan="2">Sin datos</td>'}</tbody>
+            `;
 
-                const tendencia = data.tendencia || [];
-                if (tendenciaChart) tendenciaChart.destroy();
-                tendenciaChart = new Chart(document.getElementById('tendenciaChart'), {
-                    type: 'line',
-                    data: {
-                        labels: tendencia.map(t => t.mes ? new Date(t.mes).toLocaleDateString('es', { month: 'short', year: 'numeric' }) : ''),
-                        datasets: [{ label: 'Mantenimientos', data: tendencia.map(t => t.cantidad), borderColor: '#667eea', fill: false }]
-                    },
-                    options: { responsive: true }
-                });
-            }
-        } catch (err) {
-            console.error('Error cargando estadísticas:', err);
+            // Gráfico de tendencia
+            const tendencia = data.tendencia || [];
+            if (tendenciaChart) tendenciaChart.destroy();
+            tendenciaChart = new Chart(document.getElementById('tendenciaChart'), {
+                type: 'line',
+                data: {
+                    labels: tendencia.map(t => t.mes ? new Date(t.mes).toLocaleDateString('es', { month: 'short', year: 'numeric' }) : ''),
+                    datasets: [{ label: 'Mantenimientos', data: tendencia.map(t => t.cantidad), borderColor: '#667eea', fill: false }]
+                },
+                options: { responsive: true }
+            });
         }
+    } catch (err) {
+        console.error('Error cargando estadísticas:', err);
     }
-
-    async function cargarListadoDashboard() {
-        showLoading();
-        try {
-            const params = new URLSearchParams();
-            const activoId = document.getElementById('filtroActivo')?.value;
-            const tecnicoId = document.getElementById('filtroTecnico')?.value;
-            const tipoId = document.getElementById('filtroTipo')?.value;
-            const fechaDesde = document.getElementById('filtroFechaDesde')?.value;
-            const fechaHasta = document.getElementById('filtroFechaHasta')?.value;
-            
-            if (activoId && activoId !== '') params.append('activo_id', activoId);
-            if (tecnicoId && tecnicoId !== '') params.append('tecnico_id', tecnicoId);
-            if (tipoId && tipoId !== '') params.append('tipo_id', tipoId);
-            if (fechaDesde && fechaDesde !== '') params.append('fecha_desde', fechaDesde);
-            if (fechaHasta && fechaHasta !== '') params.append('fecha_hasta', fechaHasta);
-            
-            const url = `${API_LISTAR_MANTENIMIENTOS}${params.toString() ? '?' + params.toString() : ''}`;
-            const response = await fetch(url, { method: 'GET' });
-            const data = await response.json();
-            
-            const tbody = document.getElementById('mantenimientosTableBody');
-            if (data.mantenimientos && data.mantenimientos.length) {
-                tbody.innerHTML = data.mantenimientos.map(m => `
-                    <tr onclick="verDetalleMantenimiento(${m.id})">
-                        <td>${m.id}</td>
-                        <td>${m.fecha_ejecucion ? new Date(m.fecha_ejecucion).toLocaleString() : '-'}</td>
-                        <td>${m.activo_codigo || '-'} - ${m.activo_nombre || '-'}</td>
-                        <td>${m.tecnico_nombre || '-'}</td>
-                        <td>${m.tipo_nombre || '-'}</td>
-                        <td>${m.observaciones ? (m.observaciones.substring(0, 50) + (m.observaciones.length > 50 ? '...' : '')) : '-'}</td>
-                        <td>${m.total_fotos || 0}</td>
-                        <td><span class="badge bg-success">${m.estado || 'completado'}</span></td>
-                    </tr>
-                `).join('');
-            } else {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center">No hay mantenimientos registrados</td></tr>';
-            }
-        } catch (err) {
-            console.error('Error cargando listado dashboard:', err);
-            document.getElementById('mantenimientosTableBody').innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error al cargar datos</td></tr>';
-        } finally {
-            hideLoading();
+}
+async function cargarListadoDashboard() {
+    showLoading();
+    try {
+        // Construir parámetros para la URL (GET)
+        const params = new URLSearchParams();
+        
+        const activoId = document.getElementById('filtroActivo')?.value;
+        const tecnicoId = document.getElementById('filtroTecnico')?.value;
+        const tipoId = document.getElementById('filtroTipo')?.value;
+        const fechaDesde = document.getElementById('filtroFechaDesde')?.value;
+        const fechaHasta = document.getElementById('filtroFechaHasta')?.value;
+        
+        if (activoId && activoId !== '') params.append('activo_id', activoId);
+        if (tecnicoId && tecnicoId !== '') params.append('tecnico_id', tecnicoId);
+        if (tipoId && tipoId !== '') params.append('tipo_id', tipoId);
+        if (fechaDesde && fechaDesde !== '') params.append('fecha_desde', fechaDesde);
+        if (fechaHasta && fechaHasta !== '') params.append('fecha_hasta', fechaHasta);
+        
+        // URL con parámetros GET (sin body)
+        const url = `${API_LISTAR_MANTENIMIENTOS}${params.toString() ? '?' + params.toString() : ''}`;
+        
+        const response = await fetch(url, { method: 'GET' });
+        const data = await response.json();
+        
+        const tbody = document.getElementById('mantenimientosTableBody');
+        if (data.mantenimientos && data.mantenimientos.length) {
+            tbody.innerHTML = data.mantenimientos.map(m => `
+                <tr onclick="verDetalleMantenimiento(${m.id})">
+                    <td>${m.id}</td>
+                    <td>${m.fecha_ejecucion ? new Date(m.fecha_ejecucion).toLocaleString() : '-'}</td>
+                    <td>${m.activo_codigo || '-'} - ${m.activo_nombre || '-'}</td>
+                    <td>${m.tecnico_nombre || '-'}</td>
+                    <td>${m.tipo_nombre || '-'}</td>
+                    <td>${m.observaciones ? (m.observaciones.substring(0, 50) + (m.observaciones.length > 50 ? '...' : '')) : '-'}</td>
+                    <td>${m.total_fotos || 0}</td>
+                    <td><span class="badge bg-success">${m.estado || 'completado'}</span></td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center">No hay mantenimientos registrados</td></tr>';
         }
+    } catch (err) {
+        console.error('Error cargando listado dashboard:', err);
+        document.getElementById('mantenimientosTableBody').innerHTML = '<tr><td colspan="8" class="text-center text-danger">Error al cargar datos</td></tr>';
+    } finally {
+        hideLoading();
     }
-
+}  
     async function verDetalleMantenimiento(id) {
         showLoading();
         try {
