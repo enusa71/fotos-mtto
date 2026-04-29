@@ -1079,7 +1079,15 @@ async function editarUsuario(id) {
         console.error('Error en editarUsuario:', err);
         showNotification('Error al cargar usuario: ' + err.message, 'error');
     }
-}    async function eliminarUsuario(id) {
+}    
+    async function eliminarUsuario(id) {
+    // ========== EVITAR ELIMINARSE A SÍ MISMO ==========
+    if (id == currentUser.id) {
+        showNotification('⚠️ No puedes eliminar tu propio usuario', 'warning');
+        return;
+    }
+    // =================================================
+    
     if (!await showConfirmDialog('¿Eliminar este usuario? Esta acción no se puede deshacer.')) return;
     
     showLoading();
@@ -1094,11 +1102,6 @@ async function editarUsuario(id) {
         
         if (data.success === false) {
             let mensaje = data.message || data.error || 'No se puede eliminar el usuario';
-            
-            if (data.steps && data.steps.length) {
-                mensaje = `${data.message || '⚠️ No se puede eliminar el usuario'}\n\n📋 Opciones:\n${data.steps.map((s, i) => `${i+1}. ${s}`).join('\n')}`;
-            }
-            
             showNotification(mensaje, 'warning');
             return;
         }
@@ -1106,17 +1109,16 @@ async function editarUsuario(id) {
         showNotification(data.message || '✅ Usuario eliminado correctamente', 'success');
         cargarUsuarios();
     } catch (err) {
-        let errorMsg = err.message;
-        if (errorMsg.includes('foreign key constraint') || errorMsg.includes('mantenimientos_tecnico_id_fkey')) {
-            showNotification('⚠️ No se puede eliminar el usuario porque tiene mantenimientos asociados.\n\nPara eliminarlo, primero debe reasignar o eliminar sus mantenimientos.', 'warning');
+        if (err.message.includes('foreign key constraint')) {
+            showNotification('⚠️ No se puede eliminar el usuario porque tiene mantenimientos asociados', 'warning');
         } else {
-            showNotification('Error al eliminar: ' + errorMsg, 'error');
+            showNotification('Error al eliminar: ' + err.message, 'error');
         }
     } finally {
         hideLoading();
     }
 }
-
+    
     document.getElementById('guardarUsuarioBtn').onclick = async () => {
         const id = document.getElementById('usuarioId').value;
         const usuario = document.getElementById('usuarioUsername').value;
