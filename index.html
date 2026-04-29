@@ -1388,7 +1388,10 @@ async function editarUsuario(id) {
     const activo_id = activoSelect.value;
     const tipo_mantenimiento_id = tipoSelect.value;
     const observaciones = observacionesTextarea.value;
-    const fecha_programada = new Date().toISOString().split('T')[0];
+    // Usar la misma lógica que usaste para fecha_ejecucion
+    const ahora = new Date();
+    const fechaColombia = new Date(ahora.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+    const fecha_programada = fechaColombia.toISOString().split('T')[0];
     
     if (!activo_id) { showNotification('Debe seleccionar un activo', 'warning'); return; }
     if (!tipo_mantenimiento_id) { showNotification('Debe seleccionar un tipo de mantenimiento', 'warning'); return; }
