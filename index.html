@@ -1373,29 +1373,39 @@ async function editarUsuario(id) {
     }
 
     document.getElementById('btnGuardarMantenimiento').onclick = async () => {
+    // Obtener el botón y deshabilitarlo inmediatamente
+    const btn = document.getElementById('btnGuardarMantenimiento');
+    
     // Verificar elementos
     const activoSelect = document.getElementById('activoSelect');
     const tipoSelect = document.getElementById('tipoMantenimientoSelect');
     const observacionesTextarea = document.getElementById('observaciones');
-
-if (!activoSelect) { showNotification('Error: Selector de activo no encontrado', 'error'); return; }
-if (!tipoSelect) { showNotification('Error: Selector de tipo no encontrado', 'error'); return; }
-if (!observacionesTextarea) { showNotification('Error: Campo observaciones no encontrado', 'error'); return; }
-
-const activo_id = activoSelect.value;
-const tipo_mantenimiento_id = tipoSelect.value;
-const fecha_programada = new Date().toISOString().split('T')[0];
-const observaciones = observacionesTextarea.value;
+    
+    if (!activoSelect) { showNotification('Error: Selector de activo no encontrado', 'error'); return; }
+    if (!tipoSelect) { showNotification('Error: Selector de tipo no encontrado', 'error'); return; }
+    if (!observacionesTextarea) { showNotification('Error: Campo observaciones no encontrado', 'error'); return; }
+    
+    const activo_id = activoSelect.value;
+    const tipo_mantenimiento_id = tipoSelect.value;
+    const observaciones = observacionesTextarea.value;
+    const fecha_programada = new Date().toISOString().split('T')[0];
+    
     if (!activo_id) { showNotification('Debe seleccionar un activo', 'warning'); return; }
     if (!tipo_mantenimiento_id) { showNotification('Debe seleccionar un tipo de mantenimiento', 'warning'); return; }
     if (fotosTomadas.length === 0) { showNotification('Debe tomar al menos una foto como evidencia', 'warning'); return; }
-
+    
+    // ========== DESHABILITAR BOTÓN ==========
+    const textoOriginal = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    btn.style.opacity = '0.7';
+    
     try {
         const payload = {
             admin_id: currentUser.id,
             activo_id: parseInt(activo_id),
             tipo_mantenimiento_id: parseInt(tipo_mantenimiento_id),
-            fecha_programada: fecha_programada || new Date().toISOString().slice(0,10),
+            fecha_programada: fecha_programada,
             observaciones: observaciones,
             fotos: fotosTomadas
         };
@@ -1414,9 +1424,16 @@ const observaciones = observacionesTextarea.value;
         fotosTomadas = [];
         actualizarPreviewFotos();
         document.getElementById('mantenimientoForm').reset();
-        document.getElementById('activoSelect').value = '';
-        document.getElementById('tipoMantenimientoSelect').value = '';
-        document.getElementById('observaciones').value = '';
+        
+        if (typeof $ !== 'undefined' && $.fn.select2) {
+            $('#activoSelect').val('').trigger('change');
+            $('#tipoMantenimientoSelect').val('').trigger('change');
+        } else {
+            activoSelect.value = '';
+            tipoSelect.value = '';
+        }
+        
+        observacionesTextarea.value = '';
         await iniciarCamara();
         
         if (dashboardLoaded && document.getElementById('dashboardContent').classList.contains('active')) {
@@ -1425,6 +1442,13 @@ const observaciones = observacionesTextarea.value;
         }
     } catch (err) {
         showNotification('Error al guardar: ' + err.message, 'error');
+    } finally {
+        // ========== REHABILITAR BOTÓN (solo si hay error) ==========
+        // NOTA: No rehabilitamos en éxito para evitar doble clic
+        // Si quieres rehabilitar después de éxito, descomenta las líneas:
+        // btn.disabled = false;
+        // btn.innerHTML = textoOriginal;
+        // btn.style.opacity = '1';
     }
 };
     
