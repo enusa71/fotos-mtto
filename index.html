@@ -1392,7 +1392,7 @@ async function editarUsuario(id) {
     const ahora = new Date();
     const fechaColombia = new Date(ahora.toLocaleString("en-US", { timeZone: "America/Bogota" }));
     // Usar la misma fecha Colombia que ya calculaste
-    const fecha_programada = `${year}-${month}-${day}`;
+    const fecha_programada = new Date().toISOString().split('T')[0];
         
     if (!activo_id) { showNotification('Debe seleccionar un activo', 'warning'); return; }
     if (!tipo_mantenimiento_id) { showNotification('Debe seleccionar un tipo de mantenimiento', 'warning'); return; }
