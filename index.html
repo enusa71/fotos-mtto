@@ -1409,6 +1409,12 @@ async function editarUsuario(id) {
             observaciones: observaciones,
             fotos: fotosTomadas
         };
+        // Dentro del try, después del éxito, rehabilitar después de 2 segundos
+    setTimeout(() => {
+    btn.disabled = false;
+    btn.innerHTML = textoOriginal;
+    btn.style.opacity = '1';
+    }, 2000);
         
         const resp = await fetch(WEBHOOK_CREAR_MANTENIMIENTO, {
             method: 'POST',
