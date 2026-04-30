@@ -991,17 +991,110 @@ body.tecnico-role #myTabContent {
             cargarTiposMantenimiento();
             iniciarCamara();
         }
+        //=======
+            // ========== CONTROL DE SESIÓN (TIEMPO FIJO + INACTIVIDAD) ==========
+let inactivityTimer;
+const SESSION_DURATION = 8 * 60 * 60 * 1000; // 8 horas desde el login
+const INACTIVITY_LIMIT = 30 * 60 * 1000;     // 30 minutos sin actividad (ajústalo a tu gusto)
+
+// Función para cerrar sesión
+function forceLogout(reason) {
+    if (!currentUser) return; // Ya no hay sesión activa
+    
+    showNotification(`Sesión cerrada por ${reason}. Por favor, inicie sesión nuevamente.`, 'warning');
+    
+    // Limpiar datos de sesión
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('loginTime');
+    
+    // Detener cámara si está activa
+    if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+        currentStream = null;
+    }
+    
+    // Recargar la página para mostrar login
+    location.reload();
+}
+
+// Reiniciar el temporizador de inactividad
+function resetInactivityTimer() {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(() => {
+        forceLogout('inactividad');
+    }, INACTIVITY_LIMIT);
+}
+
+// Verificar expiración por tiempo fijo
+function checkTimeExpiry() {
+    const loginTime = localStorage.getItem('loginTime');
+    if (loginTime && (Date.now() - parseInt(loginTime)) > SESSION_DURATION) {
+        forceLogout('tiempo máximo de sesión');
+        return true;
+    }
+    return false;
+}
+
+// Configurar todos los eventos de actividad del usuario
+function setupActivityEvents() {
+    const events = ['load', 'mousemove', 'keypress', 'click', 'scroll', 'touchstart'];
+    events.forEach(event => {
+        window.addEventListener(event, () => {
+            if (currentUser) {
+                resetInactivityTimer();
+            }
+        });
+    });
+    
+    // También detectar actividad en modales de Bootstrap
+    document.addEventListener('shown.bs.modal', () => {
+        if (currentUser) resetInactivityTimer();
+    });
+    document.addEventListener('hidden.bs.modal', () => {
+        if (currentUser) resetInactivityTimer();
+    });
+}
+
+// Iniciar monitoreo de sesión (llamar después del login)
+function startSessionMonitoring() {
+    if (!currentUser) return;
+    
+    // Registrar tiempo de login si no existe
+    if (!localStorage.getItem('loginTime')) {
+        localStorage.setItem('loginTime', Date.now().toString());
+    }
+    
+    // Verificar tiempo fijo periódicamente (cada 1 minuto)
+    if (window.sessionCheckInterval) clearInterval(window.sessionCheckInterval);
+    window.sessionCheckInterval = setInterval(() => {
+        if (checkTimeExpiry()) {
+            clearInterval(window.sessionCheckInterval);
+        }
+    }, 60000); // cada minuto
+    
+    // Iniciar temporizador de inactividad
+    resetInactivityTimer();
+    setupActivityEvents();
+}
+        ///======
     }
 
     document.getElementById('logoutBtn').addEventListener('click', () => {
-        if (currentStream) {
-            currentStream.getTracks().forEach(track => track.stop());
-            currentStream = null;
-        }
-        localStorage.removeItem('currentUser');
-        document.body.classList.remove('tecnico-role'); // Agrega esta línea
-        location.reload();
-    });
+    // ========== AGREGAR ESTAS 2 LÍNEAS ==========
+    if (window.sessionCheckInterval) clearInterval(window.sessionCheckInterval);
+    clearTimeout(inactivityTimer);
+    // ===========================================
+    
+    if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+        currentStream = null;
+    }
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('loginTime');  // Esta línea también es nueva (para limpiar el tiempo de login)
+    document.body.classList.remove('tecnico-role');
+    location.reload();
+});
+    
     async function cargarTiposMantenimiento() {
     const select = document.getElementById('tipoMantenimientoSelect');
     try {
@@ -1779,7 +1872,93 @@ if (modalActivo) {
             document.getElementById('activoUbicacion').value = '';
         }
     });
-}    // Inicialización
+}   
+    // ========== CONTROL DE SESIÓN (TIEMPO FIJO + INACTIVIDAD) ==========
+let inactivityTimer;
+const SESSION_DURATION = 8 * 60 * 60 * 1000; // 8 horas desde el login
+const INACTIVITY_LIMIT = 30 * 60 * 1000;     // 30 minutos sin actividad (ajústalo a tu gusto)
+
+// Función para cerrar sesión
+function forceLogout(reason) {
+    if (!currentUser) return; // Ya no hay sesión activa
+    
+    showNotification(`Sesión cerrada por ${reason}. Por favor, inicie sesión nuevamente.`, 'warning');
+    
+    // Limpiar datos de sesión
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('loginTime');
+    
+    // Detener cámara si está activa
+    if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+        currentStream = null;
+    }
+    
+    // Recargar la página para mostrar login
+    location.reload();
+}
+
+// Reiniciar el temporizador de inactividad
+function resetInactivityTimer() {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = setTimeout(() => {
+        forceLogout('inactividad');
+    }, INACTIVITY_LIMIT);
+}
+
+// Verificar expiración por tiempo fijo
+function checkTimeExpiry() {
+    const loginTime = localStorage.getItem('loginTime');
+    if (loginTime && (Date.now() - parseInt(loginTime)) > SESSION_DURATION) {
+        forceLogout('tiempo máximo de sesión');
+        return true;
+    }
+    return false;
+}
+
+// Configurar todos los eventos de actividad del usuario
+function setupActivityEvents() {
+    const events = ['load', 'mousemove', 'keypress', 'click', 'scroll', 'touchstart'];
+    events.forEach(event => {
+        window.addEventListener(event, () => {
+            if (currentUser) {
+                resetInactivityTimer();
+            }
+        });
+    });
+    
+    // También detectar actividad en modales de Bootstrap
+    document.addEventListener('shown.bs.modal', () => {
+        if (currentUser) resetInactivityTimer();
+    });
+    document.addEventListener('hidden.bs.modal', () => {
+        if (currentUser) resetInactivityTimer();
+    });
+}
+
+// Iniciar monitoreo de sesión (llamar después del login)
+function startSessionMonitoring() {
+    if (!currentUser) return;
+    
+    // Registrar tiempo de login si no existe
+    if (!localStorage.getItem('loginTime')) {
+        localStorage.setItem('loginTime', Date.now().toString());
+    }
+    
+    // Verificar tiempo fijo periódicamente (cada 1 minuto)
+    if (window.sessionCheckInterval) clearInterval(window.sessionCheckInterval);
+    window.sessionCheckInterval = setInterval(() => {
+        if (checkTimeExpiry()) {
+            clearInterval(window.sessionCheckInterval);
+        }
+    }, 60000); // cada minuto
+    
+    // Iniciar temporizador de inactividad
+    resetInactivityTimer();
+    setupActivityEvents();
+}
+    
+    // Inicialización
     (function init() {
         const stored = localStorage.getItem('currentUser');
         if (stored) {
