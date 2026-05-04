@@ -1468,10 +1468,8 @@ async function editarUsuario(id) {
     }
 
     document.getElementById('btnGuardarMantenimiento').onclick = async () => {
-    // Obtener el botón y deshabilitarlo inmediatamente
     const btn = document.getElementById('btnGuardarMantenimiento');
     
-    // Verificar elementos
     const activoSelect = document.getElementById('activoSelect');
     const tipoSelect = document.getElementById('tipoMantenimientoSelect');
     const observacionesTextarea = document.getElementById('observaciones');
@@ -1483,17 +1481,12 @@ async function editarUsuario(id) {
     const activo_id = activoSelect.value;
     const tipo_mantenimiento_id = tipoSelect.value;
     const observaciones = observacionesTextarea.value;
-    // Usar la misma lógica que usaste para fecha_ejecucion
-    const ahora = new Date();
-    const fechaColombia = new Date(ahora.toLocaleString("en-US", { timeZone: "America/Bogota" }));
-    // Usar la misma fecha Colombia que ya calculaste
     const fecha_programada = new Date().toISOString().split('T')[0];
         
     if (!activo_id) { showNotification('Debe seleccionar un activo', 'warning'); return; }
     if (!tipo_mantenimiento_id) { showNotification('Debe seleccionar un tipo de mantenimiento', 'warning'); return; }
     if (fotosTomadas.length === 0) { showNotification('Debe tomar al menos una foto como evidencia', 'warning'); return; }
     
-    // ========== DESHABILITAR BOTÓN ==========
     const textoOriginal = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
@@ -1508,12 +1501,6 @@ async function editarUsuario(id) {
             observaciones: observaciones,
             fotos: fotosTomadas
         };
-        // Dentro del try, después del éxito, rehabilitar después de 2 segundos
-    setTimeout(() => {
-    btn.disabled = false;
-    btn.innerHTML = textoOriginal;
-    btn.style.opacity = '1';
-    }, 2000);
         
         const resp = await fetch(WEBHOOK_CREAR_MANTENIMIENTO, {
             method: 'POST',
@@ -1526,13 +1513,11 @@ async function editarUsuario(id) {
         if (data.success === false) throw new Error(data.error || 'Error al guardar');
         
         showNotification(`Mantenimiento registrado con ${fotosTomadas.length} fotos`);
+        
+        // Limpiar formulario
         fotosTomadas = [];
         actualizarPreviewFotos();
         document.getElementById('mantenimientoForm').reset();
-        // ========== AGREGAR ESTAS 2 LÍNEAS ==========
-        cargarEstadisticasDashboard();
-        cargarListadoDashboard();
-        // ===========================================
         
         if (typeof $ !== 'undefined' && $.fn.select2) {
             $('#activoSelect').val('').trigger('change');
@@ -1545,19 +1530,36 @@ async function editarUsuario(id) {
         observacionesTextarea.value = '';
         await iniciarCamara();
         
-        if (dashboardLoaded && document.getElementById('dashboardContent').classList.contains('active')) {
+        // ========== ACTUALIZAR DASHBOARD ==========
+        // Verificar que las funciones existan antes de llamarlas
+        if (typeof cargarEstadisticasDashboard === 'function') {
+            console.log('Actualizando estadísticas del dashboard...');
             cargarEstadisticasDashboard();
-            cargarListadoDashboard();
+        } else {
+            console.warn('cargarEstadisticasDashboard no está definida');
         }
+        
+        if (typeof cargarListadoDashboard === 'function') {
+            console.log('Actualizando listado del dashboard...');
+            cargarListadoDashboard();
+        } else {
+            console.warn('cargarListadoDashboard no está definida');
+        }
+        // ========================================
+        
+        // Rehabilitar botón después de 2 segundos
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = textoOriginal;
+            btn.style.opacity = '1';
+        }, 2000);
+        
     } catch (err) {
         showNotification('Error al guardar: ' + err.message, 'error');
-    } finally {
-        // ========== REHABILITAR BOTÓN (solo si hay error) ==========
-        // NOTA: No rehabilitamos en éxito para evitar doble clic
-        // Si quieres rehabilitar después de éxito, descomenta las líneas:
-        // btn.disabled = false;
-        // btn.innerHTML = textoOriginal;
-        // btn.style.opacity = '1';
+        // Rehabilitar botón inmediatamente en caso de error
+        btn.disabled = false;
+        btn.innerHTML = textoOriginal;
+        btn.style.opacity = '1';
     }
 };
     
