@@ -1529,6 +1529,10 @@ async function editarUsuario(id) {
         fotosTomadas = [];
         actualizarPreviewFotos();
         document.getElementById('mantenimientoForm').reset();
+        // ========== AGREGAR ESTAS 2 LÍNEAS ==========
+        cargarEstadisticasDashboard();
+        cargarListadoDashboard();
+        // ===========================================
         
         if (typeof $ !== 'undefined' && $.fn.select2) {
             $('#activoSelect').val('').trigger('change');
