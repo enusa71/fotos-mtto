@@ -1530,24 +1530,10 @@ async function editarUsuario(id) {
         observacionesTextarea.value = '';
         await iniciarCamara();
         
-        // ========== ACTUALIZAR DASHBOARD ==========
-        // Verificar que las funciones existan antes de llamarlas
-        if (typeof cargarEstadisticasDashboard === 'function') {
-            console.log('Actualizando estadísticas del dashboard...');
-            cargarEstadisticasDashboard();
-        } else {
-            console.warn('cargarEstadisticasDashboard no está definida');
-        }
+        // ========== ACTUALIZAR DASHBOARD DESPUÉS DE GUARDAR ==========
+        await actualizarDashboardCompleto();
+        // ============================================================
         
-        if (typeof cargarListadoDashboard === 'function') {
-            console.log('Actualizando listado del dashboard...');
-            cargarListadoDashboard();
-        } else {
-            console.warn('cargarListadoDashboard no está definida');
-        }
-        // ========================================
-        
-        // Rehabilitar botón después de 2 segundos
         setTimeout(() => {
             btn.disabled = false;
             btn.innerHTML = textoOriginal;
@@ -1556,7 +1542,6 @@ async function editarUsuario(id) {
         
     } catch (err) {
         showNotification('Error al guardar: ' + err.message, 'error');
-        // Rehabilitar botón inmediatamente en caso de error
         btn.disabled = false;
         btn.innerHTML = textoOriginal;
         btn.style.opacity = '1';
