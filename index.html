@@ -1468,8 +1468,10 @@ async function editarUsuario(id) {
     }
 
     document.getElementById('btnGuardarMantenimiento').onclick = async () => {
+    // Obtener el botón y deshabilitarlo inmediatamente
     const btn = document.getElementById('btnGuardarMantenimiento');
     
+    // Verificar elementos
     const activoSelect = document.getElementById('activoSelect');
     const tipoSelect = document.getElementById('tipoMantenimientoSelect');
     const observacionesTextarea = document.getElementById('observaciones');
@@ -1477,18 +1479,21 @@ async function editarUsuario(id) {
     if (!activoSelect) { showNotification('Error: Selector de activo no encontrado', 'error'); return; }
     if (!tipoSelect) { showNotification('Error: Selector de tipo no encontrado', 'error'); return; }
     if (!observacionesTextarea) { showNotification('Error: Campo observaciones no encontrado', 'error'); return; }
-
-        console.log("1. Inicio del guardado");
-        // ...
+    
     const activo_id = activoSelect.value;
     const tipo_mantenimiento_id = tipoSelect.value;
     const observaciones = observacionesTextarea.value;
+    // Usar la misma lógica que usaste para fecha_ejecucion
+    const ahora = new Date();
+    const fechaColombia = new Date(ahora.toLocaleString("en-US", { timeZone: "America/Bogota" }));
+    // Usar la misma fecha Colombia que ya calculaste
     const fecha_programada = new Date().toISOString().split('T')[0];
         
     if (!activo_id) { showNotification('Debe seleccionar un activo', 'warning'); return; }
     if (!tipo_mantenimiento_id) { showNotification('Debe seleccionar un tipo de mantenimiento', 'warning'); return; }
     if (fotosTomadas.length === 0) { showNotification('Debe tomar al menos una foto como evidencia', 'warning'); return; }
     
+    // ========== DESHABILITAR BOTÓN ==========
     const textoOriginal = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
@@ -1503,8 +1508,13 @@ async function editarUsuario(id) {
             observaciones: observaciones,
             fotos: fotosTomadas
         };
-        console.log("2. Antes del fetch");
-        // ...
+        // Dentro del try, después del éxito, rehabilitar después de 2 segundos
+    setTimeout(() => {
+    btn.disabled = false;
+    btn.innerHTML = textoOriginal;
+    btn.style.opacity = '1';
+    }, 2000);
+        
         const resp = await fetch(WEBHOOK_CREAR_MANTENIMIENTO, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1516,16 +1526,9 @@ async function editarUsuario(id) {
         if (data.success === false) throw new Error(data.error || 'Error al guardar');
         
         showNotification(`Mantenimiento registrado con ${fotosTomadas.length} fotos`);
-
-        setTimeout(() => {
-        location.reload();
-        }, 1500);
-        
-        // Limpiar formulario
         fotosTomadas = [];
         actualizarPreviewFotos();
         document.getElementById('mantenimientoForm').reset();
-
         
         if (typeof $ !== 'undefined' && $.fn.select2) {
             $('#activoSelect').val('').trigger('change');
@@ -1538,18 +1541,19 @@ async function editarUsuario(id) {
         observacionesTextarea.value = '';
         await iniciarCamara();
         
-        
-        setTimeout(() => {
-            btn.disabled = false;
-            btn.innerHTML = textoOriginal;
-            btn.style.opacity = '1';
-        }, 2000);
-        
+        if (dashboardLoaded && document.getElementById('dashboardContent').classList.contains('active')) {
+            cargarEstadisticasDashboard();
+            cargarListadoDashboard();
+        }
     } catch (err) {
         showNotification('Error al guardar: ' + err.message, 'error');
-        btn.disabled = false;
-        btn.innerHTML = textoOriginal;
-        btn.style.opacity = '1';
+    } finally {
+        // ========== REHABILITAR BOTÓN (solo si hay error) ==========
+        // NOTA: No rehabilitamos en éxito para evitar doble clic
+        // Si quieres rehabilitar después de éxito, descomenta las líneas:
+        // btn.disabled = false;
+        // btn.innerHTML = textoOriginal;
+        // btn.style.opacity = '1';
     }
 };
     
@@ -1577,18 +1581,16 @@ async function editarUsuario(id) {
         }
     }
 
- async function cargarEstadisticasDashboard() {
+    async function cargarEstadisticasDashboard() {
     try {
         const data = await apiCall(API_ESTADISTICAS);
         if (data.success) {
-            // Totales (estos sí funcionan)
+            // Leer el resumen (totales)
             document.getElementById('totalMantenimientos').innerText = data.resumen?.total_mantenimientos || 0;
             document.getElementById('totalFotos').innerText = data.resumen?.total_fotos || 0;
             document.getElementById('totalTecnicos').innerText = data.resumen?.total_tecnicos || 0;
             document.getElementById('totalActivos').innerText = data.resumen?.total_activos_atendidos || 0;
 
-            // ========== COMENTAR GRÁFICOS (NO EXISTEN EN EL HTML) ==========
-            /*
             // Gráfico de tipos (porTipo)
             const tipos = data.porTipo || [];
             if (tipoChart) tipoChart.destroy();
@@ -1601,56 +1603,37 @@ async function editarUsuario(id) {
                 options: { responsive: true }
             });
 
+            // Tabla top técnicos
+            const topTecnicos = data.topTecnicos || [];
+            document.getElementById('topTecnicosTable').innerHTML = `
+                <thead><tr><th>Técnico</th><th>Mantenimientos</th></tr></thead>
+                <tbody>${topTecnicos.map(t => `<tr><td>${t.tecnico}</td><td>${t.mantenimientos}</td></tr>`).join('') || '<tr><td colspan="2">Sin datos</td>'}</tbody>
+            `;
+
+            // Tabla top activos
+            const topActivos = data.topActivos || [];
+            document.getElementById('topActivosTable').innerHTML = `
+                <thead><tr><th>Activo</th><th>Mantenimientos</th></table></thead>
+                <tbody>${topActivos.map(a => `<tr><td>${a.codigo} - ${a.activo}</td><td>${a.mantenimientos}</td>`).join('') || '<tr><td colspan="2">Sin datos</td>'}</tbody>
+            `;
+
             // Gráfico de tendencia
             const tendencia = data.tendencia || [];
             if (tendenciaChart) tendenciaChart.destroy();
             tendenciaChart = new Chart(document.getElementById('tendenciaChart'), {
                 type: 'line',
                 data: {
-                    labels: tendencia.map(t => t.mes ? new Date(t.mes).toLocaleDateString('es', { month: 'short', year: 'numeric' }) : ''),
+                    labels: tendencia.map(t => t.mes ? new Date(t.mes).toLocaleDateString('es-CO', { timeZone: 'America/Bogota', month: 'short', year: 'numeric' }) : ''),
                     datasets: [{ label: 'Mantenimientos', data: tendencia.map(t => t.cantidad), borderColor: '#667eea', fill: false }]
                 },
                 options: { responsive: true }
             });
-            */
-            // ================================================================
-             // DIAGNÓSTICO - Agrega esto ANTES del código que me mostraste
-console.log("=== DATOS RECIBIDOS ===");
-console.log("data completo:", data);
-console.log("topTecnicos:", data.topTecnicos);
-console.log("Cantidad de técnicos:", data.topTecnicos ? data.topTecnicos.length : 0);
-
-// Si solo tiene 1, mostrar cuál es
-if(data.topTecnicos && data.topTecnicos.length === 1) {
-    console.log("⚠️ Solo llega 1 técnico:", data.topTecnicos[0]);
-    console.log("¿Dónde están los otros 9?");
-}
-
-// Tu código original
-const topTecnicos = data.topTecnicos || [];
-document.getElementById('topTecnicosTable').innerHTML = `
-    <thead><tr><th>Técnico</th><th>Mantenimientos</th></tr></thead>
-    <tbody>${topTecnicos.map(t => `<tr><td>${t.tecnico}</td><td>${t.mantenimientos}</td></tr>`).join('') || '<tr><td colspan="2">Sin datos</td></tr>'}</tbody>
-`;
-            // Tabla top técnicos
-            const topTecnicos = data.topTecnicos || [];
-            document.getElementById('topTecnicosTable').innerHTML = `
-                <thead><tr><th>Técnico</th><th>Mantenimientos</th></tr></thead>
-                <tbody>${topTecnicos.map(t => `<tr><td>${t.tecnico}</td><td>${t.mantenimientos}</td></tr>`).join('') || '<tr><td colspan="2">Sin datos</td></tr>'}</tbody>
-            `;
-
-            // Tabla top activos
-            const topActivos = data.topActivos || [];
-            document.getElementById('topActivosTable').innerHTML = `
-                <thead><tr><th>Activo</th><th>Mantenimientos</th></tr></thead>
-                <tbody>${topActivos.map(a => `<tr><td>${a.codigo} - ${a.activo}</td><td>${a.mantenimientos}</td></tr>`).join('') || '<tr><td colspan="2">Sin datos</td></tr>'}</tbody>
-            `;
         }
     } catch (err) {
         console.error('Error cargando estadísticas:', err);
     }
 }
-let todosMantenimientos = [];
+    let todosMantenimientos = [];
 let paginaActual = 1;
 let registrosPorPagina = 20;
 let totalPaginas = 1;
@@ -1974,88 +1957,7 @@ function startSessionMonitoring() {
     resetInactivityTimer();
     setupActivityEvents();
 }
-  async function actualizarDashboardCompleto() {
-    console.log("🔄 1. Iniciando actualización...");
     
-    try {
-        // 1. Actualizar estadísticas
-        const statsUrl = `${API_ESTADISTICAS}?_=${Date.now()}`;
-        const statsRes = await fetch(statsUrl);
-        const statsData = await statsRes.json();
-        
-        if (statsData.success && statsData.resumen) {
-            // Actualizar tarjetas
-            document.getElementById('totalMantenimientos').innerText = statsData.resumen.total_mantenimientos || 0;
-            document.getElementById('totalFotos').innerText = statsData.resumen.total_fotos || 0;
-            document.getElementById('totalTecnicos').innerText = statsData.resumen.total_tecnicos || 0;
-            document.getElementById('totalActivos').innerText = statsData.resumen.total_activos_atendidos || 0;
-            
-            // Actualizar top técnicos
-            const topTec = statsData.topTecnicos || [];
-            const topTecHtml = topTec.map(t => `<tr><td style="text-align: left;">${t.tecnico}</td><td style="text-align: center;">${t.mantenimientos}</td></tr>`).join('');
-            document.getElementById('topTecnicosTable').innerHTML = `<thead><tr><th>Técnico</th><th>Mantenimientos</th></tr></thead><tbody>${topTecHtml || '<tr><td colspan="2">Sin datos</td>'}</tbody>`;
-            
-            // Actualizar top activos
-            const topAct = statsData.topActivos || [];
-            const topActHtml = topAct.map(a => `<tr><td style="text-align: left;">${a.codigo} - ${a.activo}</td><td style="text-align: center;">${a.mantenimientos}</td></tr>`).join('');
-            document.getElementById('topActivosTable').innerHTML = `<thead><tr><th>Activo</th><th>Mantenimientos</th></tr></thead><tbody>${topActHtml || '<tr><td colspan="2">Sin datos‹'}</tbody>`;
-        }
-        
-        // 2. ACTUALIZAR EL HISTORIAL DE MANTENIMIENTOS (con los filtros actuales)
-        const params = new URLSearchParams();
-        const activoId = document.getElementById('filtroActivo')?.value;
-        const tecnicoId = document.getElementById('filtroTecnico')?.value;
-        const tipoId = document.getElementById('filtroTipo')?.value;
-        const fechaDesde = document.getElementById('filtroFechaDesde')?.value;
-        const fechaHasta = document.getElementById('filtroFechaHasta')?.value;
-        
-        if (activoId && activoId !== '') params.append('activo_id', activoId);
-        if (tecnicoId && tecnicoId !== '') params.append('tecnico_id', tecnicoId);
-        if (tipoId && tipoId !== '') params.append('tipo_id', tipoId);
-        if (fechaDesde && fechaDesde !== '') params.append('fecha_desde', fechaDesde);
-        if (fechaHasta && fechaHasta !== '') params.append('fecha_hasta', fechaHasta);
-        
-        const listUrl = `${API_LISTAR_MANTENIMIENTOS}${params.toString() ? '?' + params.toString() : ''}&_=${Date.now()}`;
-        const listRes = await fetch(listUrl);
-        const listData = await listRes.json();
-        
-        if (listData.mantenimientos && listData.mantenimientos.length) {
-            // Actualizar la variable global y la página
-            window.todosMantenimientos = listData.mantenimientos;
-            window.paginaActual = 1;
-            window.registrosPorPagina = parseInt(document.getElementById('paginaLimit')?.value || 20);
-            
-            // Llamar a renderizarPagina para actualizar la tabla
-            if (typeof renderizarPagina === 'function') {
-                renderizarPagina();
-            }
-            
-            // Actualizar contador de total de registros
-            const totalSpan = document.getElementById('totalRegistros');
-            if (totalSpan) totalSpan.innerText = listData.mantenimientos.length;
-            
-            // Actualizar contador de páginas
-            const totalPaginas = Math.ceil(listData.mantenimientos.length / window.registrosPorPagina);
-            document.getElementById('totalPaginas').innerText = totalPaginas || 1;
-            document.getElementById('paginaActual').innerText = 1;
-            
-        } else {
-            const tbody = document.getElementById('mantenimientosTableBody');
-            if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No hay mantenimientos que coincidan con los filtros seleccionados‹';
-            }
-            window.todosMantenimientos = [];
-            if (document.getElementById('totalRegistros')) document.getElementById('totalRegistros').innerText = '0';
-            if (document.getElementById('totalPaginas')) document.getElementById('totalPaginas').innerText = '1';
-            if (document.getElementById('paginaActual')) document.getElementById('paginaActual').innerText = '1';
-        }
-        
-        console.log("✅ Actualización completada");
-        
-    } catch (err) {
-        console.error("❌ Error:", err);
-    }
-}
     // Inicialización
     (function init() {
         const stored = localStorage.getItem('currentUser');
@@ -2106,6 +2008,5 @@ function startSessionMonitoring() {
         }
     });
 </script>
-            
 </body>
 </html>
