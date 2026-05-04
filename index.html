@@ -1477,7 +1477,9 @@ async function editarUsuario(id) {
     if (!activoSelect) { showNotification('Error: Selector de activo no encontrado', 'error'); return; }
     if (!tipoSelect) { showNotification('Error: Selector de tipo no encontrado', 'error'); return; }
     if (!observacionesTextarea) { showNotification('Error: Campo observaciones no encontrado', 'error'); return; }
-    
+
+        console.log("1. Inicio del guardado");
+        // ...
     const activo_id = activoSelect.value;
     const tipo_mantenimiento_id = tipoSelect.value;
     const observaciones = observacionesTextarea.value;
@@ -1501,7 +1503,8 @@ async function editarUsuario(id) {
             observaciones: observaciones,
             fotos: fotosTomadas
         };
-        
+        console.log("2. Antes del fetch");
+        // ...
         const resp = await fetch(WEBHOOK_CREAR_MANTENIMIENTO, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
