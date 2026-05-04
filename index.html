@@ -1513,15 +1513,17 @@ async function editarUsuario(id) {
         if (data.success === false) throw new Error(data.error || 'Error al guardar');
         
         showNotification(`Mantenimiento registrado con ${fotosTomadas.length} fotos`);
+
+        // ========== ACTUALIZAR DASHBOARD ==========
+        console.log("📌 Voy a llamar a actualizarDashboardCompleto");
+        actualizarDashboardCompleto();
+        // =========================================
         
         // Limpiar formulario
         fotosTomadas = [];
         actualizarPreviewFotos();
         document.getElementById('mantenimientoForm').reset();
 
-        // ========== ACTUALIZAR DASHBOARD DESPUÉS DE GUARDAR ==========
-        await actualizarDashboardCompleto();
-        // ============================================================
         
         if (typeof $ !== 'undefined' && $.fn.select2) {
             $('#activoSelect').val('').trigger('change');
