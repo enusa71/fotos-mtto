@@ -1958,59 +1958,80 @@ function startSessionMonitoring() {
     resetInactivityTimer();
     setupActivityEvents();
 }
-   async function actualizarDashboardCompleto() {
+  async function actualizarDashboardCompleto() {
     console.log("🔄 1. Iniciando actualización...");
     
     try {
         // 1. Actualizar estadísticas
         const statsUrl = `${API_ESTADISTICAS}?_=${Date.now()}`;
-        console.log("🔄 2. Fetching:", statsUrl);
-        
         const statsRes = await fetch(statsUrl);
         const statsData = await statsRes.json();
         
-        console.log("🔄 3. Datos recibidos:", statsData);
-        
         if (statsData.success && statsData.resumen) {
             // Actualizar tarjetas
-            const totalMant = statsData.resumen.total_mantenimientos || 0;
-            const totalFotos = statsData.resumen.total_fotos || 0;
-            const totalTec = statsData.resumen.total_tecnicos || 0;
-            const totalAct = statsData.resumen.total_activos_atendidos || 0;
-            
-            console.log(`📊 Totales: M=${totalMant}, F=${totalFotos}, T=${totalTec}, A=${totalAct}`);
-            
-            document.getElementById('totalMantenimientos').innerText = totalMant;
-            document.getElementById('totalFotos').innerText = totalFotos;
-            document.getElementById('totalTecnicos').innerText = totalTec;
-            document.getElementById('totalActivos').innerText = totalAct;
+            document.getElementById('totalMantenimientos').innerText = statsData.resumen.total_mantenimientos || 0;
+            document.getElementById('totalFotos').innerText = statsData.resumen.total_fotos || 0;
+            document.getElementById('totalTecnicos').innerText = statsData.resumen.total_tecnicos || 0;
+            document.getElementById('totalActivos').innerText = statsData.resumen.total_activos_atendidos || 0;
             
             // Actualizar top técnicos
             const topTec = statsData.topTecnicos || [];
-            const topTecHtml = topTec.map(t => `<tr><td>${t.tecnico}</td><td>${t.mantenimientos}</td></tr>`).join('');
-            document.getElementById('topTecnicosTable').innerHTML = `<thead><tr><th>Técnico</th><th>Mantenimientos</th></tr></thead><tbody>${topTecHtml || '<tr><td colspan="2">Sin datos</td></tr>'}</tbody>`;
+            const topTecHtml = topTec.map(t => `<tr><td style="text-align: left;">${t.tecnico}</td><td style="text-align: center;">${t.mantenimientos}</td></tr>`).join('');
+            document.getElementById('topTecnicosTable').innerHTML = `<thead><tr><th>Técnico</th><th>Mantenimientos</th></tr></thead><tbody>${topTecHtml || '<tr><td colspan="2">Sin datos</td>'}</tbody>`;
             
             // Actualizar top activos
             const topAct = statsData.topActivos || [];
-            const topActHtml = topAct.map(a => `<tr><td>${a.codigo} - ${a.activo}</td><td>${a.mantenimientos}</td></tr>`).join('');
-            document.getElementById('topActivosTable').innerHTML = `<thead><tr><th>Activo</th><th>Mantenimientos</th></tr></thead><tbody>${topActHtml || '<tr><td colspan="2">Sin datos</td></tr>'}</tbody>`;
+            const topActHtml = topAct.map(a => `<tr><td style="text-align: left;">${a.codigo} - ${a.activo}</td><td style="text-align: center;">${a.mantenimientos}</td></tr>`).join('');
+            document.getElementById('topActivosTable').innerHTML = `<thead><tr><th>Activo</th><th>Mantenimientos</th></tr></thead><tbody>${topActHtml || '<tr><td colspan="2">Sin datos‹'}</tbody>`;
         }
         
-        // 2. Actualizar listado
-        const listUrl = `${API_LISTAR_MANTENIMIENTOS}?_=${Date.now()}`;
+        // 2. ACTUALIZAR EL HISTORIAL DE MANTENIMIENTOS (con los filtros actuales)
+        const params = new URLSearchParams();
+        const activoId = document.getElementById('filtroActivo')?.value;
+        const tecnicoId = document.getElementById('filtroTecnico')?.value;
+        const tipoId = document.getElementById('filtroTipo')?.value;
+        const fechaDesde = document.getElementById('filtroFechaDesde')?.value;
+        const fechaHasta = document.getElementById('filtroFechaHasta')?.value;
+        
+        if (activoId && activoId !== '') params.append('activo_id', activoId);
+        if (tecnicoId && tecnicoId !== '') params.append('tecnico_id', tecnicoId);
+        if (tipoId && tipoId !== '') params.append('tipo_id', tipoId);
+        if (fechaDesde && fechaDesde !== '') params.append('fecha_desde', fechaDesde);
+        if (fechaHasta && fechaHasta !== '') params.append('fecha_hasta', fechaHasta);
+        
+        const listUrl = `${API_LISTAR_MANTENIMIENTOS}${params.toString() ? '?' + params.toString() : ''}&_=${Date.now()}`;
         const listRes = await fetch(listUrl);
         const listData = await listRes.json();
         
-        if (listData.mantenimientos) {
-            if (typeof todosMantenimientos !== 'undefined') {
-                window.todosMantenimientos = listData.mantenimientos;
-                window.paginaActual = 1;
-                if (typeof renderizarPagina === 'function') {
-                    renderizarPagina();
-                }
+        if (listData.mantenimientos && listData.mantenimientos.length) {
+            // Actualizar la variable global y la página
+            window.todosMantenimientos = listData.mantenimientos;
+            window.paginaActual = 1;
+            window.registrosPorPagina = parseInt(document.getElementById('paginaLimit')?.value || 20);
+            
+            // Llamar a renderizarPagina para actualizar la tabla
+            if (typeof renderizarPagina === 'function') {
+                renderizarPagina();
             }
+            
+            // Actualizar contador de total de registros
             const totalSpan = document.getElementById('totalRegistros');
             if (totalSpan) totalSpan.innerText = listData.mantenimientos.length;
+            
+            // Actualizar contador de páginas
+            const totalPaginas = Math.ceil(listData.mantenimientos.length / window.registrosPorPagina);
+            document.getElementById('totalPaginas').innerText = totalPaginas || 1;
+            document.getElementById('paginaActual').innerText = 1;
+            
+        } else {
+            const tbody = document.getElementById('mantenimientosTableBody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No hay mantenimientos que coincidan con los filtros seleccionados‹';
+            }
+            window.todosMantenimientos = [];
+            if (document.getElementById('totalRegistros')) document.getElementById('totalRegistros').innerText = '0';
+            if (document.getElementById('totalPaginas')) document.getElementById('totalPaginas').innerText = '1';
+            if (document.getElementById('paginaActual')) document.getElementById('paginaActual').innerText = '1';
         }
         
         console.log("✅ Actualización completada");
