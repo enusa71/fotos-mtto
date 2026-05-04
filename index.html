@@ -1952,7 +1952,91 @@ function startSessionMonitoring() {
     resetInactivityTimer();
     setupActivityEvents();
 }
-    
+    // ========== FUNCIÓN PARA ACTUALIZAR EL DASHBOARD COMPLETAMENTE ==========
+async function actualizarDashboardCompleto() {
+    console.log('🔄 Actualizando dashboard...');
+    try {
+        // 1. Actualizar estadísticas (totales, top técnicos, top activos)
+        const statsResponse = await fetch(API_ESTADISTICAS);
+        const statsData = await statsResponse.json();
+        
+        if (statsData.success) {
+            // Actualizar tarjetas de totales
+            document.getElementById('totalMantenimientos').innerText = statsData.resumen?.total_mantenimientos || 0;
+            document.getElementById('totalFotos').innerText = statsData.resumen?.total_fotos || 0;
+            document.getElementById('totalTecnicos').innerText = statsData.resumen?.total_tecnicos || 0;
+            document.getElementById('totalActivos').innerText = statsData.resumen?.total_activos_atendidos || 0;
+            
+            // Actualizar tabla de top técnicos
+            const topTecnicos = statsData.topTecnicos || [];
+            const topTecnicosHtml = topTecnicos.map(t => `
+                <tr>
+                    <td style="text-align: left;">${t.tecnico}</td>
+                    <td style="text-align: center;">${t.mantenimientos}</td>
+                </tr>
+            `).join('');
+            document.getElementById('topTecnicosTable').innerHTML = `
+                <thead>
+                    <tr><th>Técnico</th><th>Mantenimientos</th></tr>
+                </thead>
+                <tbody>${topTecnicosHtml || '<tr><td colspan="2">Sin datos</td></tr>'}</tbody>
+            `;
+            
+            // Actualizar tabla de top activos
+            const topActivos = statsData.topActivos || [];
+            const topActivosHtml = topActivos.map(a => `
+                <tr>
+                    <td style="text-align: left;">${a.codigo} - ${a.activo}</td>
+                    <td style="text-align: center;">${a.mantenimientos}</td>
+                </tr>
+            `).join('');
+            document.getElementById('topActivosTable').innerHTML = `
+                <thead>
+                    <tr><th>Activo</th><th>Mantenimientos</th></tr>
+                </thead>
+                <tbody>${topActivosHtml || '<tr><td colspan="2">Sin datos</td></tr>'}</tbody>
+            `;
+        }
+        
+        // 2. Actualizar el listado de mantenimientos (con los filtros actuales)
+        const params = new URLSearchParams();
+        const activoId = document.getElementById('filtroActivo')?.value;
+        const tecnicoId = document.getElementById('filtroTecnico')?.value;
+        const tipoId = document.getElementById('filtroTipo')?.value;
+        const fechaDesde = document.getElementById('filtroFechaDesde')?.value;
+        const fechaHasta = document.getElementById('filtroFechaHasta')?.value;
+        
+        if (activoId && activoId !== '') params.append('activo_id', activoId);
+        if (tecnicoId && tecnicoId !== '') params.append('tecnico_id', tecnicoId);
+        if (tipoId && tipoId !== '') params.append('tipo_id', tipoId);
+        if (fechaDesde && fechaDesde !== '') params.append('fecha_desde', fechaDesde);
+        if (fechaHasta && fechaHasta !== '') params.append('fecha_hasta', fechaHasta);
+        
+        const url = `${API_LISTAR_MANTENIMIENTOS}${params.toString() ? '?' + params.toString() : ''}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.mantenimientos && data.mantenimientos.length) {
+            window.todosMantenimientos = data.mantenimientos;
+            window.paginaActual = 1;
+            window.registrosPorPagina = parseInt(document.getElementById('paginaLimit')?.value || 20);
+            if (typeof renderizarPagina === 'function') {
+                renderizarPagina();
+            }
+        } else {
+            const tbody = document.getElementById('mantenimientosTableBody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No hay mantenimientos que coincidan con los filtros seleccionados</td></tr>';
+            }
+            window.todosMantenimientos = [];
+            if (document.getElementById('totalRegistros')) document.getElementById('totalRegistros').innerText = '0';
+        }
+        
+        console.log('✅ Dashboard actualizado correctamente');
+    } catch (err) {
+        console.error('❌ Error actualizando dashboard:', err);
+    }
+}
     // Inicialización
     (function init() {
         const stored = localStorage.getItem('currentUser');
