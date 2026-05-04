@@ -1614,7 +1614,24 @@ async function editarUsuario(id) {
             });
             */
             // ================================================================
+             // DIAGNÓSTICO - Agrega esto ANTES del código que me mostraste
+console.log("=== DATOS RECIBIDOS ===");
+console.log("data completo:", data);
+console.log("topTecnicos:", data.topTecnicos);
+console.log("Cantidad de técnicos:", data.topTecnicos ? data.topTecnicos.length : 0);
 
+// Si solo tiene 1, mostrar cuál es
+if(data.topTecnicos && data.topTecnicos.length === 1) {
+    console.log("⚠️ Solo llega 1 técnico:", data.topTecnicos[0]);
+    console.log("¿Dónde están los otros 9?");
+}
+
+// Tu código original
+const topTecnicos = data.topTecnicos || [];
+document.getElementById('topTecnicosTable').innerHTML = `
+    <thead><tr><th>Técnico</th><th>Mantenimientos</th></tr></thead>
+    <tbody>${topTecnicos.map(t => `<tr><td>${t.tecnico}</td><td>${t.mantenimientos}</td></tr>`).join('') || '<tr><td colspan="2">Sin datos</td></tr>'}</tbody>
+`;
             // Tabla top técnicos
             const topTecnicos = data.topTecnicos || [];
             document.getElementById('topTecnicosTable').innerHTML = `
@@ -1633,7 +1650,7 @@ async function editarUsuario(id) {
         console.error('Error cargando estadísticas:', err);
     }
 }
-    let todosMantenimientos = [];
+let todosMantenimientos = [];
 let paginaActual = 1;
 let registrosPorPagina = 20;
 let totalPaginas = 1;
