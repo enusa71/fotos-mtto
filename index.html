@@ -2089,5 +2089,22 @@ function startSessionMonitoring() {
         }
     });
 </script>
+<script>
+// FORZAR mostrar todos los técnicos
+setTimeout(function() {
+    // Buscar todas las tablas
+    const tablas = document.querySelectorAll('table');
+    tablas.forEach(tabla => {
+        const filas = tabla.querySelectorAll('tr');
+        console.log('Filas encontradas:', filas.length);
+        
+        // Si solo muestra 1 fila de datos
+        if(filas.length <= 2) {
+            alert('⚠️ La tabla solo tiene ' + (filas.length-1) + ' técnicos. Los datos llegan pero no se muestran todos.');
+        }
+    });
+}, 1000);
+</script>
+            
 </body>
 </html>
