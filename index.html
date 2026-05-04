@@ -1518,6 +1518,10 @@ async function editarUsuario(id) {
         fotosTomadas = [];
         actualizarPreviewFotos();
         document.getElementById('mantenimientoForm').reset();
+
+        // ========== ACTUALIZAR DASHBOARD DESPUÉS DE GUARDAR ==========
+        await actualizarDashboardCompleto();
+        // ============================================================
         
         if (typeof $ !== 'undefined' && $.fn.select2) {
             $('#activoSelect').val('').trigger('change');
@@ -1530,9 +1534,6 @@ async function editarUsuario(id) {
         observacionesTextarea.value = '';
         await iniciarCamara();
         
-        // ========== ACTUALIZAR DASHBOARD DESPUÉS DE GUARDAR ==========
-        await actualizarDashboardCompleto();
-        // ============================================================
         
         setTimeout(() => {
             btn.disabled = false;
