@@ -1517,6 +1517,11 @@ async function editarUsuario(id) {
         
         showNotification(`Mantenimiento registrado con ${fotosTomadas.length} fotos`);
 
+        // Recargar la página completa después de 1 segundo
+        setTimeout(() => {
+        location.reload();
+        }, 1500);
+
         // ========== ACTUALIZAR DASHBOARD ==========
         console.log("📌 Voy a llamar a actualizarDashboardCompleto");
         actualizarDashboardCompleto();
