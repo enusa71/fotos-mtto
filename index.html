@@ -1231,28 +1231,33 @@ async function editarUsuario(id) {
     };
 
     // ==================== CRUD ACTIVOS ====================
-    async function cargarActivos() {
+ async function cargarActivos() {
     const data = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
     const tbody = document.getElementById('activosTableBody');
-    if (!data.length) { tbody.innerHTML = '<tr><td colspan="6">No hay activos registrados</tr>'; return; }
-    tbody.innerHTML = data.map(a => `<tr><td>${a.id}</td><td>${a.codigo}</td><td>${a.nombre}</td><td>${a.tipo}</td><td>${a.ubicacion || ''}</td><td><button class="btn btn-sm btn-warning editar-activo" data-id="${a.id}">Editar</button> <button class="btn btn-sm btn-danger eliminar-activo" data-id="${a.id}">Eliminar</button></td></tr>`).join('');
+    if (!data.length) { 
+        tbody.innerHTML = '<tr><td colspan="6">No hay activos registrados‹'; 
+        return; 
+    }
+    tbody.innerHTML = data.map(a => `
+        <tr>
+            <td>${a.id}‹
+            <td>${a.codigo}‹
+            <td>${a.nombre}‹
+            <td>${a.tipo}‹
+            <td>${a.ubicacion || ''}‹
+            <td>
+                <button class="btn btn-sm btn-warning editar-activo" data-id="${a.id}">Editar</button>
+                <button class="btn btn-sm btn-danger eliminar-activo" data-id="${a.id}">Eliminar</button>
+            ‹
+        </tr>
+    `).join('');
     
     document.querySelectorAll('.editar-activo').forEach(btn => btn.onclick = () => editarActivo(btn.dataset.id));
     document.querySelectorAll('.eliminar-activo').forEach(btn => btn.onclick = () => eliminarActivo(btn.dataset.id));
     
-    // También actualizar filtros del dashboard si está cargado
+    // Actualizar filtros del dashboard
     if (document.getElementById('filtroActivo')) {
         cargarFiltrosDashboard();
-    }
-    
-    // Inicializar Select2 en el filtro de activos del dashboard si existe
-    const filtroActivo = document.getElementById('filtroActivo');
-    if (filtroActivo && typeof $ !== 'undefined' && $.fn && $.fn.select2 && filtroActivo.options.length > 1) {
-        $(filtroActivo).select2({
-            placeholder: "Buscar activo...",
-            allowClear: true,
-            width: '100%'
-        });
     }
 }
    async function editarActivo(id) {
@@ -1558,29 +1563,58 @@ async function editarUsuario(id) {
 };
     
     // ==================== DASHBOARD ====================
-    async function cargarFiltrosDashboard() {
-        try {
-            const [activos, usuarios, tipos] = await Promise.all([
-                apiCall(WEBHOOK_LISTAR_ACTIVOS),
-                apiCall(WEBHOOK_LISTAR_USUARIOS),
-                apiCall(WEBHOOK_LISTAR_TIPOS_MANTENIMIENTO)
-            ]);
-            
-            const activosList = Array.isArray(activos) ? activos : [];
-            const usuariosList = Array.isArray(usuarios) ? usuarios : [];
-            const tiposList = Array.isArray(tipos) ? tipos : [];
-            
-            document.getElementById('filtroActivo').innerHTML = '<option value="">Todos los activos</option>' + 
-                activosList.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
-            document.getElementById('filtroTecnico').innerHTML = '<option value="">Todos los técnicos</option>' + 
-                usuariosList.filter(u => u.rol === 'tecnico').map(u => `<option value="${u.id}">${u.nombre}</option>`).join('');
-            document.getElementById('filtroTipo').innerHTML = '<option value="">Todos los tipos</option>' + 
-                tiposList.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
-        } catch (err) {
-            console.error('Error cargando filtros dashboard:', err);
+   async function cargarFiltrosDashboard() {
+    try {
+        const [activos, usuarios, tipos] = await Promise.all([
+            apiCall(WEBHOOK_LISTAR_ACTIVOS),
+            apiCall(WEBHOOK_LISTAR_USUARIOS),
+            apiCall(WEBHOOK_LISTAR_TIPOS_MANTENIMIENTO)
+        ]);
+        
+        const activosList = Array.isArray(activos) ? activos : [];
+        const usuariosList = Array.isArray(usuarios) ? usuarios : [];
+        const tiposList = Array.isArray(tipos) ? tipos : [];
+        
+        // Llenar el select de activos
+        const filtroActivo = document.getElementById('filtroActivo');
+        filtroActivo.innerHTML = '<option value="">Todos los activos</option>' + 
+            activosList.map(a => `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`).join('');
+        
+        // ========== AGREGAR SELECT2 PARA BÚSQUEDA ==========
+        if (typeof $ !== 'undefined' && $.fn && $.fn.select2) {
+            $(filtroActivo).select2({
+                placeholder: "Buscar activo...",
+                allowClear: true,
+                width: '100%'
+            });
         }
+        // =================================================
+        
+        document.getElementById('filtroTecnico').innerHTML = '<option value="">Todos los técnicos</option>' + 
+            usuariosList.filter(u => u.rol === 'tecnico').map(u => `<option value="${u.id}">${u.nombre}</option>`).join('');
+        
+        document.getElementById('filtroTipo').innerHTML = '<option value="">Todos los tipos</option>' + 
+            tiposList.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+        
+        // También agregar Select2 a técnicos y tipos si lo deseas
+        if (typeof $ !== 'undefined' && $.fn && $.fn.select2) {
+            $(document.getElementById('filtroTecnico')).select2({
+                placeholder: "Buscar técnico...",
+                allowClear: true,
+                width: '100%'
+            });
+            $(document.getElementById('filtroTipo')).select2({
+                placeholder: "Buscar tipo...",
+                allowClear: true,
+                width: '100%'
+            });
+        }
+        
+    } catch (err) {
+        console.error('Error cargando filtros dashboard:', err);
     }
-
+}
+    
     async function cargarEstadisticasDashboard() {
     try {
         const data = await apiCall(API_ESTADISTICAS);
