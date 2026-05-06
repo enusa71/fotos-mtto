@@ -1945,6 +1945,12 @@ function cambiarPagina(delta) {
             cargarListadoDashboard();
         }
     });
+    document.getElementById('informes-tab').addEventListener('shown.bs.tab', function() {
+    if (!window.informeCargado) {
+        cargarFiltrosInforme();
+        window.informeCargado = true;
+    }
+    });
         // ========== AGREGAR AQUÍ LOS EVENT LISTENERS ==========
     // Eventos de paginación
     const btnAnterior = document.getElementById('btnPaginaAnterior');
