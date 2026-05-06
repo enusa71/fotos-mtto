@@ -2093,6 +2093,320 @@ function startSessionMonitoring() {
             } catch(e) {}
         }
     })();
+    //==============================
+    // ========== GENERADOR DE INFORMES ==========
+let informeData = null;
+
+async function cargarFiltrosInforme() {
+    try {
+        const [activos, tipos] = await Promise.all([
+            apiCall(WEBHOOK_LISTAR_ACTIVOS),
+            apiCall(WEBHOOK_LISTAR_TIPOS_MANTENIMIENTO)
+        ]);
+        
+        const activosList = Array.isArray(activos) ? activos : [];
+        const tiposList = Array.isArray(tipos) ? tipos : [];
+        
+        document.getElementById('informeActivos').innerHTML = activosList.map(a => 
+            `<option value="${a.id}">${a.codigo} - ${a.nombre}</option>`
+        ).join('');
+        
+        document.getElementById('informeTipo').innerHTML = '<option value="">Todos los tipos</option>' +
+            tiposList.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+        
+        // Preseleccionar fechas (últimos 12 meses)
+        const hoy = new Date();
+        const unAnioAtras = new Date();
+        unAnioAtras.setFullYear(hoy.getFullYear() - 1);
+        
+        document.getElementById('informeFechaHasta').value = hoy.toISOString().split('T')[0];
+        document.getElementById('informeFechaDesde').value = unAnioAtras.toISOString().split('T')[0];
+        
+    } catch (err) {
+        console.error('Error cargando filtros informe:', err);
+    }
+}
+
+async function generarInforme() {
+    showLoading();
+    try {
+        // Obtener filtros
+        const activosSelect = document.getElementById('informeActivos');
+        const activosIds = Array.from(activosSelect.selectedOptions).map(opt => opt.value);
+        const tiposId = document.getElementById('informeTipo').value;
+        const fechaDesde = document.getElementById('informeFechaDesde').value;
+        const fechaHasta = document.getElementById('informeFechaHasta').value;
+        const agruparPor = document.getElementById('informeAgrupar').value;
+        const incluirFotos = document.getElementById('informeIncluirFotos').value === 'si';
+        
+        if (activosIds.length === 0) {
+            showNotification('Debe seleccionar al menos un activo', 'warning');
+            hideLoading();
+            return;
+        }
+        
+        // Construir la consulta
+        let url = `${API_LISTAR_MANTENIMIENTOS}?`;
+        const params = [];
+        activosIds.forEach(id => params.push(`activo_id=${id}`));
+        if (tiposId) params.push(`tipo_id=${tiposId}`);
+        if (fechaDesde) params.push(`fecha_desde=${fechaDesde}`);
+        if (fechaHasta) params.push(`fecha_hasta=${fechaHasta}`);
+        url += params.join('&');
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        const mantenimientos = data.mantenimientos || [];
+        
+        if (mantenimientos.length === 0) {
+            showNotification('No hay datos para los filtros seleccionados', 'warning');
+            hideLoading();
+            return;
+        }
+        
+        // Obtener detalles de activos
+        const activosData = await apiCall(WEBHOOK_LISTAR_ACTIVOS);
+        const activosMap = new Map();
+        (Array.isArray(activosData) ? activosData : []).forEach(a => activosMap.set(a.id.toString(), a));
+        
+        // Agrupar datos según criterio
+        let grupos = {};
+        
+        if (agruparPor === 'activo') {
+            mantenimientos.forEach(m => {
+                const key = m.activo_codigo;
+                if (!grupos[key]) grupos[key] = { nombre: m.activo_nombre, codigo: m.activo_codigo, total: 0, items: [], fotos: 0 };
+                grupos[key].total += 1;
+                grupos[key].fotos += m.total_fotos || 0;
+                grupos[key].items.push(m);
+            });
+        } else if (agruparPor === 'tipo') {
+            mantenimientos.forEach(m => {
+                const key = m.tipo_nombre;
+                if (!grupos[key]) grupos[key] = { nombre: key, total: 0, items: [], fotos: 0 };
+                grupos[key].total += 1;
+                grupos[key].fotos += m.total_fotos || 0;
+                grupos[key].items.push(m);
+            });
+        } else {
+            mantenimientos.forEach(m => {
+                const fecha = new Date(m.fecha_ejecucion);
+                const key = `${fecha.getFullYear()}-${fecha.getMonth() + 1}`;
+                if (!grupos[key]) grupos[key] = { nombre: key, total: 0, items: [], fotos: 0 };
+                grupos[key].total += 1;
+                grupos[key].fotos += m.total_fotos || 0;
+                grupos[key].items.push(m);
+            });
+        }
+        
+        // Generar HTML del informe
+        const totalMantenimientos = mantenimientos.length;
+        const totalFotos = mantenimientos.reduce((sum, m) => sum + (m.total_fotos || 0), 0);
+        const fechaGeneracion = new Date().toLocaleString('es-CO');
+        
+        let html = `
+            <div style="font-family: 'Segoe UI', Arial, sans-serif; padding: 20px;">
+                <!-- Encabezado -->
+                <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #667eea; padding-bottom: 20px;">
+                    <h1 style="color: #667eea;">Zona Franca de Barranquilla</h1>
+                    <h2>Informe de Mantenimiento de Activos</h2>
+                    <p style="color: #666;">Generado: ${fechaGeneracion}</p>
+                    <p><strong>Período:</strong> ${fechaDesde || 'Inicio'} al ${fechaHasta || 'Actual'}</p>
+                </div>
+                
+                <!-- Resumen ejecutivo -->
+                <div style="display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap;">
+                    <div style="flex: 1; background: #667eea; color: white; padding: 20px; border-radius: 10px; text-align: center;">
+                        <div style="font-size: 36px; font-weight: bold;">${totalMantenimientos}</div>
+                        <div>Total Mantenimientos</div>
+                    </div>
+                    <div style="flex: 1; background: #764ba2; color: white; padding: 20px; border-radius: 10px; text-align: center;">
+                        <div style="font-size: 36px; font-weight: bold;">${totalFotos}</div>
+                        <div>Total Fotos de Evidencia</div>
+                    </div>
+                    <div style="flex: 1; background: #28a745; color: white; padding: 20px; border-radius: 10px; text-align: center;">
+                        <div style="font-size: 36px; font-weight: bold;">${Object.keys(grupos).length}</div>
+                        <div>${agruparPor === 'activo' ? 'Activos intervenidos' : (agruparPor === 'tipo' ? 'Tipos de mantenimiento' : 'Meses reportados')}</div>
+                    </div>
+                </div>
+                
+                <!-- Detalle por grupo -->
+                <h3 style="color: #667eea; margin-bottom: 20px;">Detalle de actividades</h3>
+        `;
+        
+        for (const [key, grupo] of Object.entries(grupos)) {
+            const nombreGrupo = agruparPor === 'activo' ? `${grupo.codigo} - ${grupo.nombre}` : 
+                               (agruparPor === 'tipo' ? grupo.nombre : `Mes ${grupo.nombre}`);
+            
+            html += `
+                <div style="margin-bottom: 30px; border: 1px solid #ddd; border-radius: 10px; overflow: hidden;">
+                    <div style="background: #f8f9fa; padding: 12px 20px; border-bottom: 1px solid #ddd;">
+                        <h4 style="margin: 0; color: #667eea;">📌 ${nombreGrupo}</h4>
+                        <small>${grupo.total} mantenimientos | ${grupo.fotos} fotos</small>
+                    </div>
+                    <div style="padding: 15px;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f0f2f5;">
+                                    <th style="padding: 8px; text-align: left;">Fecha</th>
+                                    <th style="padding: 8px; text-align: left;">Técnico</th>
+                                    <th style="padding: 8px; text-align: left;">Tipo</th>
+                                    <th style="padding: 8px; text-align: left;">Observaciones</th>
+                                    <th style="padding: 8px; text-align: center;">Fotos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+            
+            grupo.items.forEach(item => {
+                html += `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 8px;">${new Date(item.fecha_ejecucion).toLocaleDateString('es-CO')}</td>
+                        <td style="padding: 8px;">${item.tecnico_nombre || '-'}</td>
+                        <td style="padding: 8px;">${item.tipo_nombre || '-'}</td>
+                        <td style="padding: 8px;">${item.observaciones?.substring(0, 60) || '-'}${item.observaciones?.length > 60 ? '...' : ''}</td>
+                        <td style="padding: 8px; text-align: center;">${item.total_fotos || 0}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Si incluye fotos, agregar galería
+        if (incluirFotos && mantenimientos.length > 0) {
+            html += `<h3 style="color: #667eea; margin-top: 30px;">Evidencias fotográficas</h3>`;
+            html += `<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">`;
+            
+            // Obtener fotos de los mantenimientos (limitado a 20 para no sobrecargar)
+            const fotosPromises = mantenimientos.slice(0, 20).map(async (m) => {
+                try {
+                    const detalle = await apiCall(`${API_DETALLE_MANTENIMIENTO}?id=${m.id}`);
+                    return detalle.fotos || [];
+                } catch (e) {
+                    return [];
+                }
+            });
+            
+            const fotosArray = await Promise.all(fotosPromises);
+            const todasFotos = fotosArray.flat();
+            
+            todasFotos.slice(0, 30).forEach(foto => {
+                html += `
+                    <div style="width: 150px; text-align: center; border: 1px solid #ddd; border-radius: 8px; padding: 8px;">
+                        <img src="${foto.foto_url}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 5px;" alt="Evidencia">
+                    </div>
+                `;
+            });
+            
+            html += `</div>`;
+            if (todasFotos.length === 0) html += `<p>No hay fotos disponibles para mostrar</p>`;
+        }
+        
+        html += `
+                <!-- Pie de página -->
+                <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #999; font-size: 12px;">
+                    <p>Informe generado automáticamente por el Sistema de Gestión de Mantenimiento - Zona Franca de Barranquilla</p>
+                    <p>Este documento es de carácter oficial para presentación al Ministerio de Comercio Exterior</p>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('informeContenido').innerHTML = html;
+        document.getElementById('informePreview').style.display = 'block';
+        informeData = html;
+        
+        showNotification('Informe generado correctamente', 'success');
+        
+    } catch (err) {
+        console.error('Error generando informe:', err);
+        showNotification('Error al generar el informe: ' + err.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+function exportarInformePDF() {
+    if (!informeData) {
+        showNotification('Primero genere el informe', 'warning');
+        return;
+    }
+    
+    const ventana = window.open();
+    ventana.document.write(`
+        <html>
+            <head>
+                <title>Informe Mantenimiento - Zona Franca</title>
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+                <style>
+                    body { padding: 20px; }
+                    @media print {
+                        .no-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                ${informeData}
+                <div class="no-print" style="position: fixed; bottom: 20px; right: 20px;">
+                    <button onclick="window.print();" class="btn btn-primary">Imprimir / Guardar como PDF</button>
+                </div>
+                <script>
+                    console.log('Listo para imprimir');
+                <\/script>
+            </body>
+        </html>
+    `);
+}
+
+function exportarInformePowerPoint() {
+    if (!informeData) {
+        showNotification('Primero genere el informe', 'warning');
+        return;
+    }
+    
+    // Crear un blob HTML que PowerPoint puede abrir
+    const blob = new Blob([`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Informe Mantenimiento - Zona Franca</title>
+            <style>
+                body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; }
+                h1, h2, h3 { color: #667eea; }
+                table { border-collapse: collapse; width: 100%; }
+                th, td { border: 1px solid #ddd; padding: 8px; }
+                th { background: #f0f2f5; }
+            </style>
+        </head>
+        <body>
+            ${informeData}
+        </body>
+        </html>
+    `], { type: 'text/html' });
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `informe_mantenimiento_${new Date().toISOString().split('T')[0]}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showNotification('Informe exportado. Puede abrirlo en PowerPoint', 'success');
+}
+
+// Eventos del informe
+document.getElementById('btnGenerarInforme')?.addEventListener('click', generarInforme);
+document.getElementById('btnExportarPDF')?.addEventListener('click', exportarInformePDF);
+document.getElementById('btnExportarPowerPoint')?.addEventListener('click', exportarInformePowerPoint);
+    //==============================
 </script>
 </body>
 </html>
