@@ -2265,6 +2265,80 @@ if (informesTab) {
 if (document.getElementById('informes') && document.getElementById('informes').classList.contains('active')) {
     cargarFiltrosInforme();
 }
+
+    // ========== FUNCIONES PARA DESCARGAR FOTOS SELECCIONADAS ==========
+async function descargarFotosSeleccionadasZip() {
+    const checkboxes = document.querySelectorAll('#galeriaFotosInforme .foto-checkbox:checked');
+    
+    if (checkboxes.length === 0) {
+        showNotification('Seleccione al menos una foto para descargar', 'warning');
+        return;
+    }
+    
+    showNotification(`Preparando descarga de ${checkboxes.length} fotos...`, 'info');
+    
+    try {
+        const zip = new JSZip();
+        let descargadas = 0;
+        
+        for (const checkbox of checkboxes) {
+            const url = checkbox.getAttribute('data-url');
+            const nombre = checkbox.getAttribute('data-nombre') || `foto_${Date.now()}_${descargadas + 1}.jpg`;
+            
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                zip.file(nombre, blob);
+                descargadas++;
+            } catch (e) {
+                console.error('Error descargando foto:', url, e);
+            }
+        }
+        
+        if (descargadas === 0) {
+            showNotification('No se pudo descargar ninguna foto', 'error');
+            return;
+        }
+        
+        const content = await zip.generateAsync({ type: 'blob' });
+        const link = document.createElement('a');
+        const objectUrl = URL.createObjectURL(content);
+        link.href = objectUrl;
+        link.download = `informe_fotos_${new Date().toISOString().split('T')[0]}.zip`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(objectUrl);
+        
+        showNotification(`${descargadas} fotos descargadas en ZIP`, 'success');
+        
+    } catch (err) {
+        console.error('Error creando ZIP:', err);
+        showNotification('Error al crear el archivo ZIP', 'error');
+    }
+}
+
+function seleccionarTodasFotos() {
+    const checkboxes = document.querySelectorAll('#galeriaFotosInforme .foto-checkbox');
+    checkboxes.forEach(cb => cb.checked = true);
+    showNotification(`${checkboxes.length} fotos seleccionadas`, 'info');
+}
+
+function deseleccionarTodasFotos() {
+    const checkboxes = document.querySelectorAll('#galeriaFotosInforme .foto-checkbox');
+    checkboxes.forEach(cb => cb.checked = false);
+    showNotification('Fotos deseleccionadas', 'info');
+}
+
+function asignarEventosGaleriaFotos() {
+    const btnSelectAll = document.getElementById('btnSeleccionarTodasFotos');
+    const btnDeselectAll = document.getElementById('btnDeseleccionarTodasFotos');
+    const btnDownload = document.getElementById('btnDescargarFotosSeleccionadas');
+    
+    if (btnSelectAll) btnSelectAll.onclick = seleccionarTodasFotos;
+    if (btnDeselectAll) btnDeselectAll.onclick = deseleccionarTodasFotos;
+    if (btnDownload) btnDownload.onclick = descargarFotosSeleccionadasZip;
+}
 </script>
 </body>
 </html>
