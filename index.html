@@ -2145,14 +2145,21 @@ async function generarInforme() {
             return;
         }
         
-        // Construir la consulta
+        // Construir URL con múltiples activos como array
         let url = `${API_LISTAR_MANTENIMIENTOS}?`;
         const params = [];
-        activosIds.forEach(id => params.push(`activo_id=${id}`));
+        
+        // Enviar activos como parámetro separado o como JSON
+        if (activosIds.length > 0) {
+            // Opción 1: Enviar como CSV (activo_id=1,2,3)
+            params.push(`activo_id=${activosIds.join(',')}`);
+        }
         if (tiposId) params.push(`tipo_id=${tiposId}`);
         if (fechaDesde) params.push(`fecha_desde=${fechaDesde}`);
         if (fechaHasta) params.push(`fecha_hasta=${fechaHasta}`);
         url += params.join('&');
+
+        console.log('URL generada:', url); // Para depurar
         
         const response = await fetch(url);
         const data = await response.json();
