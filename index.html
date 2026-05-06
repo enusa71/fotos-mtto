@@ -2177,7 +2177,7 @@ async function generarInforme() {
                 const key = m.activo_codigo;
                 if (!grupos[key]) grupos[key] = { nombre: m.activo_nombre, codigo: m.activo_codigo, total: 0, items: [], fotos: 0 };
                 grupos[key].total += 1;
-                grupos[key].fotos += m.total_fotos || 0;
+                grupos[key].fotos += parseInt(m.total_fotos) || 0;
                 grupos[key].items.push(m);
             });
         } else if (agruparPor === 'tipo') {
@@ -2201,7 +2201,7 @@ async function generarInforme() {
         
         // Generar HTML del informe
         const totalMantenimientos = mantenimientos.length;
-        const totalFotos = mantenimientos.reduce((sum, m) => sum + (m.total_fotos || 0), 0);
+        const totalFotos = mantenimientos.reduce((sum, m) => sum + (parseInt(m.total_fotos) || 0), 0);
         const fechaGeneracion = new Date().toLocaleString('es-CO');
         
         let html = `
