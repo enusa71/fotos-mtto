@@ -515,6 +515,11 @@ body.tecnico-role #myTabContent {
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboardContent" type="button" role="tab"><i class="fas fa-chart-line"></i> Dashboard</button>
             </li>
+            <li class="nav-item">
+                <button class="nav-link" id="informes-tab" data-bs-toggle="tab" data-bs-target="#informes" type="button" role="tab">
+            <i class="fas fa-file-alt"></i> Informes
+    </button>
+</li>
         </ul>
         
         <!-- Panel técnico (visible solo para técnicos, fuera de las pestañas) -->
@@ -592,6 +597,86 @@ body.tecnico-role #myTabContent {
                     </table>
                 </div>
             </div>
+            <!-- Tab Informes -->
+<div class="tab-pane fade" id="informes" role="tabpanel">
+    <div class="card">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="fas fa-chart-line"></i> Generador de informes - Ministerio de Comercio Exterior</h5>
+        </div>
+        <div class="card-body">
+            <!-- Filtros del informe -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Seleccione los criterios para generar el informe. Puede incluir uno o varios activos.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold"><i class="fas fa-building"></i> Activos (puede seleccionar varios)</label>
+                    <select id="informeActivos" class="form-select" multiple size="5">
+                        <option value="">Cargando activos...</option>
+                    </select>
+                    <small class="text-muted">Mantenga presionada la tecla Ctrl (Windows) o Cmd (Mac) para seleccionar múltiples activos</small>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold"><i class="fas fa-calendar-alt"></i> Fecha desde</label>
+                    <input type="date" id="informeFechaDesde" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold"><i class="fas fa-calendar-alt"></i> Fecha hasta</label>
+                    <input type="date" id="informeFechaHasta" class="form-control">
+                </div>
+            </div>
+            
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold"><i class="fas fa-tools"></i> Tipo de mantenimiento</label>
+                    <select id="informeTipo" class="form-select">
+                        <option value="">Todos los tipos</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold"><i class="fas fa-chart-pie"></i> Agrupar por</label>
+                    <select id="informeAgrupar" class="form-select">
+                        <option value="activo">Por activo</option>
+                        <option value="tipo">Por tipo de mantenimiento</option>
+                        <option value="mes">Por mes</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold"><i class="fas fa-image"></i> Incluir fotos</label>
+                    <select id="informeIncluirFotos" class="form-select">
+                        <option value="si">Sí, incluir fotos de evidencias</option>
+                        <option value="no">No, solo datos resumidos</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-12">
+                    <button id="btnGenerarInforme" class="btn btn-primary btn-lg">
+                        <i class="fas fa-file-alt"></i> Generar informe
+                    </button>
+                    <button id="btnExportarPDF" class="btn btn-danger btn-lg ms-2">
+                        <i class="fas fa-file-pdf"></i> Exportar a PDF
+                    </button>
+                    <button id="btnExportarPowerPoint" class="btn btn-success btn-lg ms-2">
+                        <i class="fas fa-file-powerpoint"></i> Exportar a PowerPoint
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Vista previa del informe -->
+            <div id="informePreview" class="mt-4" style="display: none;">
+                <hr>
+                <div id="informeContenido"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
             <!-- Tab Dashboard -->
                      <!-- Tab Dashboard -->
