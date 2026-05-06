@@ -2407,6 +2407,22 @@ document.getElementById('btnGenerarInforme')?.addEventListener('click', generarI
 document.getElementById('btnExportarPDF')?.addEventListener('click', exportarInformePDF);
 document.getElementById('btnExportarPowerPoint')?.addEventListener('click', exportarInformePowerPoint);
     //==============================
+    // ========== ACTIVAR CARGA DE FILTROS AL ABRIR PESTAÑA INFORMES ==========
+const informesTab = document.getElementById('informes-tab');
+if (informesTab) {
+    informesTab.addEventListener('shown.bs.tab', function() {
+        console.log('Pestaña Informes abierta');
+        if (!window.informeCargado) {
+            cargarFiltrosInforme();
+            window.informeCargado = true;
+        }
+    });
+}
+
+// Si la pestaña ya está activa al cargar la página, cargar los filtros
+if (document.getElementById('informes') && document.getElementById('informes').classList.contains('active')) {
+    cargarFiltrosInforme();
+}
 </script>
 </body>
 </html>
